@@ -1,0 +1,1395 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Unibridge API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: users
+    description: User profile operations
+  - name: posts
+    description: Community post operations
+  - name: comments
+    description: Comment operations
+  - name: colleges
+    description: College information operations
+  - name: resources
+    description: Admission resource operations
+  - name: feed
+    description: Activity feed operations
+  - name: notifications
+    description: Notification operations
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List users (community members)
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create a user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "201":
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get a user profile
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Not found
+
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update a user profile
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /posts:
+    get:
+      operationId: listPosts
+      tags: [posts]
+      summary: List community posts
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+            enum: [general, advice, results, essays, extracurriculars, interviews, financial_aid]
+        - in: query
+          name: collegeId
+          schema:
+            type: integer
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: [newest, most_liked, most_discussed]
+            default: newest
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+
+    post:
+      operationId: createPost
+      tags: [posts]
+      summary: Create a community post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostInput"
+      responses:
+        "201":
+          description: Created post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+
+  /posts/{id}:
+    get:
+      operationId: getPost
+      tags: [posts]
+      summary: Get a post with comments
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Post detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDetail"
+        "404":
+          description: Not found
+
+    delete:
+      operationId: deletePost
+      tags: [posts]
+      summary: Delete a post
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /posts/{id}/like:
+    post:
+      operationId: togglePostLike
+      tags: [posts]
+      summary: Toggle like on a post
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LikeToggle"
+      responses:
+        "200":
+          description: Like toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LikeResult"
+
+  /posts/{id}/comments:
+    get:
+      operationId: listComments
+      tags: [comments]
+      summary: List comments on a post
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comment"
+
+    post:
+      operationId: createComment
+      tags: [comments]
+      summary: Create a comment on a post
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentInput"
+      responses:
+        "201":
+          description: Created comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+
+  /comments/{id}:
+    delete:
+      operationId: deleteComment
+      tags: [comments]
+      summary: Delete a comment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /colleges:
+    get:
+      operationId: listColleges
+      tags: [colleges]
+      summary: List colleges
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of colleges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/College"
+
+    post:
+      operationId: createCollege
+      tags: [colleges]
+      summary: Create a college
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollegeInput"
+      responses:
+        "201":
+          description: Created college
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/College"
+
+  /colleges/{id}:
+    get:
+      operationId: getCollege
+      tags: [colleges]
+      summary: Get college details
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: College details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/College"
+        "404":
+          description: Not found
+
+  /colleges/{id}/reviews:
+    get:
+      operationId: listCollegeReviews
+      tags: [colleges]
+      summary: List reviews for a college
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CollegeReview"
+
+    post:
+      operationId: createCollegeReview
+      tags: [colleges]
+      summary: Submit a review for a college
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollegeReviewInput"
+      responses:
+        "201":
+          description: Created review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollegeReview"
+
+  /resources:
+    get:
+      operationId: listResources
+      tags: [resources]
+      summary: List admission resources and guides
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+            enum: [essays, testing, extracurriculars, interviews, financial_aid, timelines, general]
+      responses:
+        "200":
+          description: List of resources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Resource"
+
+    post:
+      operationId: createResource
+      tags: [resources]
+      summary: Create a resource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResourceInput"
+      responses:
+        "201":
+          description: Created resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Resource"
+
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications for a user
+      parameters:
+        - in: query
+          name: userId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: unreadOnly
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/unread-count:
+    get:
+      operationId: getUnreadCount
+      tags: [notifications]
+      summary: Get unread notification count for a user
+      parameters:
+        - in: query
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnreadCount"
+
+  /notifications/read-all:
+    post:
+      operationId: markAllRead
+      tags: [notifications]
+      summary: Mark all notifications as read for a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarkAllReadInput"
+      responses:
+        "200":
+          description: Marked as read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarkAllReadResult"
+
+  /notifications/{id}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark a single notification as read
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated notification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+  /applications:
+    get:
+      operationId: listApplications
+      tags: [applications]
+      summary: List college applications for a user
+      parameters:
+        - in: query
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of applications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Application"
+
+    post:
+      operationId: createApplication
+      tags: [applications]
+      summary: Add a college to the application tracker
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationInput"
+      responses:
+        "201":
+          description: Created application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  /applications/{id}:
+    patch:
+      operationId: updateApplication
+      tags: [applications]
+      summary: Update application status, notes, or deadline
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationUpdate"
+      responses:
+        "200":
+          description: Updated application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+    delete:
+      operationId: deleteApplication
+      tags: [applications]
+      summary: Remove a college from the tracker
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /checklist:
+    get:
+      operationId: listChecklistItems
+      tags: [checklist]
+      summary: List checklist items for a user
+      parameters:
+        - in: query
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of checklist items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChecklistItem"
+
+    post:
+      operationId: createChecklistItem
+      tags: [checklist]
+      summary: Create a checklist item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChecklistItemInput"
+      responses:
+        "201":
+          description: Created checklist item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecklistItem"
+
+  /checklist/template:
+    post:
+      operationId: loadChecklistTemplate
+      tags: [checklist]
+      summary: Load the default Common App checklist template for a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoadTemplateInput"
+      responses:
+        "201":
+          description: Created items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChecklistItem"
+
+  /checklist/{id}:
+    patch:
+      operationId: updateChecklistItem
+      tags: [checklist]
+      summary: Update a checklist item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChecklistItemUpdate"
+      responses:
+        "200":
+          description: Updated item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecklistItem"
+
+    delete:
+      operationId: deleteChecklistItem
+      tags: [checklist]
+      summary: Delete a checklist item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /feed/trending:
+    get:
+      operationId: getTrendingPosts
+      tags: [feed]
+      summary: Get trending posts (most liked/commented recently)
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Trending posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+
+  /feed/stats:
+    get:
+      operationId: getCommunityStats
+      tags: [feed]
+      summary: Get community statistics for the dashboard
+      responses:
+        "200":
+          description: Community stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityStats"
+
+  /feed/colleges/popular:
+    get:
+      operationId: getPopularColleges
+      tags: [feed]
+      summary: Most discussed colleges
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 8
+      responses:
+        "200":
+          description: Popular colleges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CollegeWithPostCount"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    User:
+      type: object
+      required: [id, username, gradYear, createdAt]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        bio:
+          type: ["string", "null"]
+        gradYear:
+          type: integer
+        gpa:
+          type: ["number", "null"]
+        satScore:
+          type: ["integer", "null"]
+        actScore:
+          type: ["integer", "null"]
+        targetColleges:
+          type: array
+          items:
+            type: string
+        extracurriculars:
+          type: array
+          items:
+            type: string
+        postCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    UserInput:
+      type: object
+      required: [username, gradYear]
+      properties:
+        username:
+          type: string
+          minLength: 3
+        displayName:
+          type: string
+        bio:
+          type: string
+        gradYear:
+          type: integer
+        gpa:
+          type: number
+        satScore:
+          type: integer
+        actScore:
+          type: integer
+        targetColleges:
+          type: array
+          items:
+            type: string
+        extracurriculars:
+          type: array
+          items:
+            type: string
+
+    UserUpdate:
+      type: object
+      properties:
+        displayName:
+          type: string
+        bio:
+          type: string
+        gradYear:
+          type: integer
+        gpa:
+          type: number
+        satScore:
+          type: integer
+        actScore:
+          type: integer
+        targetColleges:
+          type: array
+          items:
+            type: string
+        extracurriculars:
+          type: array
+          items:
+            type: string
+
+    Post:
+      type: object
+      required: [id, userId, title, content, category, likeCount, commentCount, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        title:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+        collegeId:
+          type: ["integer", "null"]
+        collegeName:
+          type: ["string", "null"]
+        likeCount:
+          type: integer
+        commentCount:
+          type: integer
+        isLiked:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    PostDetail:
+      type: object
+      required: [id, userId, title, content, category, likeCount, commentCount, createdAt, comments]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        title:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+        collegeId:
+          type: ["integer", "null"]
+        collegeName:
+          type: ["string", "null"]
+        likeCount:
+          type: integer
+        commentCount:
+          type: integer
+        isLiked:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Comment"
+
+    PostInput:
+      type: object
+      required: [userId, title, content, category]
+      properties:
+        userId:
+          type: integer
+        title:
+          type: string
+          minLength: 3
+        content:
+          type: string
+          minLength: 10
+        category:
+          type: string
+          enum: [general, advice, results, essays, extracurriculars, interviews, financial_aid]
+        collegeId:
+          type: integer
+
+    Comment:
+      type: object
+      required: [id, postId, userId, content, createdAt]
+      properties:
+        id:
+          type: integer
+        postId:
+          type: integer
+        userId:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CommentInput:
+      type: object
+      required: [userId, content]
+      properties:
+        userId:
+          type: integer
+        content:
+          type: string
+          minLength: 1
+
+    LikeToggle:
+      type: object
+      required: [userId, liked]
+      properties:
+        userId:
+          type: integer
+        liked:
+          type: boolean
+
+    LikeResult:
+      type: object
+      required: [liked, likeCount]
+      properties:
+        liked:
+          type: boolean
+        likeCount:
+          type: integer
+
+    College:
+      type: object
+      required: [id, name, location, acceptanceRate, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        location:
+          type: string
+        state:
+          type: ["string", "null"]
+        type:
+          type: string
+          enum: [public, private, liberal_arts]
+        acceptanceRate:
+          type: number
+        medianGpa:
+          type: ["number", "null"]
+        medianSat:
+          type: ["integer", "null"]
+        medianAct:
+          type: ["integer", "null"]
+        enrollment:
+          type: ["integer", "null"]
+        description:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        color:
+          type: ["string", "null"]
+        postCount:
+          type: integer
+        reviewCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    CollegeInput:
+      type: object
+      required: [name, location, acceptanceRate]
+      properties:
+        name:
+          type: string
+        location:
+          type: string
+        state:
+          type: string
+        type:
+          type: string
+          enum: [public, private, liberal_arts]
+        acceptanceRate:
+          type: number
+        medianGpa:
+          type: number
+        medianSat:
+          type: integer
+        medianAct:
+          type: integer
+        enrollment:
+          type: integer
+        description:
+          type: string
+        logoUrl:
+          type: string
+        color:
+          type: string
+
+    CollegeReview:
+      type: object
+      required: [id, collegeId, userId, status, createdAt]
+      properties:
+        id:
+          type: integer
+        collegeId:
+          type: integer
+        userId:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [accepted, rejected, waitlisted, deferred, attending]
+        gpa:
+          type: ["number", "null"]
+        satScore:
+          type: ["integer", "null"]
+        actScore:
+          type: ["integer", "null"]
+        content:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    CollegeReviewInput:
+      type: object
+      required: [userId, status]
+      properties:
+        userId:
+          type: integer
+        status:
+          type: string
+          enum: [accepted, rejected, waitlisted, deferred, attending]
+        gpa:
+          type: number
+        satScore:
+          type: integer
+        actScore:
+          type: integer
+        content:
+          type: string
+
+    Resource:
+      type: object
+      required: [id, title, category, content, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        category:
+          type: string
+        excerpt:
+          type: ["string", "null"]
+        content:
+          type: string
+        readTime:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    ResourceInput:
+      type: object
+      required: [title, category, content]
+      properties:
+        title:
+          type: string
+        category:
+          type: string
+          enum: [essays, testing, extracurriculars, interviews, financial_aid, timelines, general]
+        excerpt:
+          type: string
+        content:
+          type: string
+        readTime:
+          type: integer
+
+    CommunityStats:
+      type: object
+      required: [totalUsers, totalPosts, totalColleges, totalResources, postsThisWeek, activeUsers]
+      properties:
+        totalUsers:
+          type: integer
+        totalPosts:
+          type: integer
+        totalColleges:
+          type: integer
+        totalResources:
+          type: integer
+        postsThisWeek:
+          type: integer
+        activeUsers:
+          type: integer
+        postsByCategory:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryCount"
+
+    CategoryCount:
+      type: object
+      required: [category, count]
+      properties:
+        category:
+          type: string
+        count:
+          type: integer
+
+    CollegeWithPostCount:
+      type: object
+      required: [id, name, location, acceptanceRate, postCount]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        location:
+          type: string
+        acceptanceRate:
+          type: number
+        logoUrl:
+          type: ["string", "null"]
+        color:
+          type: ["string", "null"]
+        postCount:
+          type: integer
+        reviewCount:
+          type: integer
+
+    Notification:
+      type: object
+      required: [id, userId, actorId, type, read, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        actorId:
+          type: integer
+        actorUsername:
+          type: string
+        actorDisplayName:
+          type: ["string", "null"]
+        type:
+          type: string
+          enum: [like, comment]
+        postId:
+          type: ["integer", "null"]
+        postTitle:
+          type: ["string", "null"]
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    UnreadCount:
+      type: object
+      required: [count]
+      properties:
+        count:
+          type: integer
+
+    MarkAllReadInput:
+      type: object
+      required: [userId]
+      properties:
+        userId:
+          type: integer
+
+    MarkAllReadResult:
+      type: object
+      required: [updated]
+      properties:
+        updated:
+          type: integer
+
+    Application:
+      type: object
+      required: [id, userId, collegeId, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        collegeId:
+          type: integer
+        collegeName:
+          type: string
+        collegeLocation:
+          type: string
+        collegeColor:
+          type: ["string", "null"]
+        collegeAcceptanceRate:
+          type: number
+        status:
+          type: string
+          enum: [planning, applying, applied, waitlisted, accepted, rejected, deferred]
+        notes:
+          type: ["string", "null"]
+        deadline:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ApplicationInput:
+      type: object
+      required: [userId, collegeId]
+      properties:
+        userId:
+          type: integer
+        collegeId:
+          type: integer
+        status:
+          type: string
+          enum: [planning, applying, applied, waitlisted, accepted, rejected, deferred]
+        notes:
+          type: string
+        deadline:
+          type: string
+
+    ApplicationUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [planning, applying, applied, waitlisted, accepted, rejected, deferred]
+        notes:
+          type: string
+        deadline:
+          type: string
+
+    ChecklistItem:
+      type: object
+      required: [id, userId, title, category, completed, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        title:
+          type: string
+        category:
+          type: string
+          enum: [essays, testing, recommendations, activities, applications, financial_aid, other]
+        completed:
+          type: boolean
+        dueDate:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ChecklistItemInput:
+      type: object
+      required: [userId, title]
+      properties:
+        userId:
+          type: integer
+        title:
+          type: string
+        category:
+          type: string
+          enum: [essays, testing, recommendations, activities, applications, financial_aid, other]
+        dueDate:
+          type: string
+        notes:
+          type: string
+
+    ChecklistItemUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        category:
+          type: string
+          enum: [essays, testing, recommendations, activities, applications, financial_aid, other]
+        completed:
+          type: boolean
+        dueDate:
+          type: string
+        notes:
+          type: string
+
+    LoadTemplateInput:
+      type: object
+      required: [userId]
+      properties:
+        userId:
+          type: integer
