@@ -289,6 +289,12 @@ export type Store = {
   joined: string[];
 };
 
+function mergeCommunities(savedCommunities?: Community[]) {
+  const saved = savedCommunities ?? [];
+  const savedBySlug = new Map(saved.map((community) => [community.slug, community]));
+  return seedHubs.map((seed) => ({ ...seed, ...(savedBySlug.get(seed.slug) ?? {}) }));
+}
+
 export function loadStore(): Store {
   if (typeof window === "undefined") {
     return {
@@ -317,7 +323,7 @@ export function loadStore(): Store {
   try {
     const parsed = JSON.parse(raw) as Partial<Store>;
     return {
-      communities: parsed.communities?.length ? parsed.communities : seedHubs,
+      communities: mergeCommunities(parsed.communities),
       posts: parsed.posts?.length ? parsed.posts : seedPosts,
       comments: parsed.comments?.length ? parsed.comments : seedComments,
       saved: parsed.saved ?? [],
@@ -337,6 +343,20 @@ export function loadStore(): Store {
 export function saveStore(store: Store) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
   window.dispatchEvent(new Event("unibridge-store-updated"));
+}
+
+export function toggleJoinedInStore(slug: string) {
+  const current = loadStore();
+  const isJoined = current.joined.includes(slug);
+  const joined = isJoined ? current.joined.filter((item) => item !== slug) : [...current.joined, slug];
+  const communities = current.communities.map((community) =>
+    community.slug === slug
+      ? { ...community, members: Math.max(0, community.members + (isJoined ? -1 : 1)) }
+      : community,
+  );
+  const next = { ...current, joined, communities };
+  saveStore(next);
+  return next;
 }
 
 export function timeAgo(input: string) {

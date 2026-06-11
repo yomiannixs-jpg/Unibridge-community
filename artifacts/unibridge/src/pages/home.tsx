@@ -130,7 +130,20 @@ export default function Home() {
 
       <div className="flex gap-2 overflow-x-auto pb-1">
         <button onClick={() => setFilter("all")} className={`rounded-full px-4 py-2 text-sm font-bold ${filter === "all" ? "bg-slate-950 text-white" : "bg-white text-slate-600 border"}`}>All</button>
-        {(store.communities ?? []).map((c) => <button key={c.slug} onClick={() => setFilter(c.slug)} className={`rounded-full px-4 py-2 text-sm font-bold ${filter === c.slug ? "bg-slate-950 text-white" : "bg-white text-slate-600 border"}`}>d/{c.slug}</button>)}
+        {(store.communities ?? []).map((c) => {
+          const joined = store.joined.includes(c.slug);
+          return (
+            <button
+              key={c.slug}
+              onClick={() => setFilter(c.slug)}
+              className={`rounded-full px-4 py-2 text-sm font-bold ${
+                filter === c.slug ? "bg-slate-950 text-white" : joined ? "border bg-blue-50 text-blue-800" : "border bg-white text-slate-600"
+              }`}
+            >
+              d/{c.slug}{joined ? " · Joined" : ""}
+            </button>
+          );
+        })}
       </div>
 
       <div className="grid gap-4">

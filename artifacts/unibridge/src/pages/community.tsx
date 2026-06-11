@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "wouter";
 import { ArrowBigUp, MessageCircle, Plus, Users } from "lucide-react";
 import { apiGet, apiPost } from "@/lib/api";
-import { loadStore, saveStore, timeAgo, type Community as LocalCommunity, type Post } from "@/lib/community-store";
+import { loadStore, saveStore, timeAgo, toggleJoinedInStore, type Community as LocalCommunity, type Post } from "@/lib/community-store";
+import { useAuth } from "@/lib/auth-context";
 
 type ApiSubDiscourse = {
   id: number;
@@ -63,6 +64,7 @@ export default function Community() {
   const params = useParams<{ slug?: string }>();
   const [store, setStore] = useState(loadStore());
   const [apiOnline, setApiOnline] = useState(false);
+  const { user, isAuthenticated, toggleJoinedHub } = useAuth();
   const slug = params.slug;
 
   useEffect(() => {
@@ -107,14 +109,18 @@ export default function Community() {
     [community, store.posts],
   );
 
+  const isJoined = (communitySlug: string) => {
+    return store.joined.includes(communitySlug) || !!user?.joinedHubs.includes(communitySlug);
+  };
+
   const toggleJoin = (communitySlug: string) => {
-    const joined = store.joined.includes(communitySlug)
-      ? store.joined.filter((x) => x !== communitySlug)
-      : [...store.joined, communitySlug];
-    const next = { ...store, joined };
+    const wasJoined = isJoined(communitySlug);
+    const next = toggleJoinedInStore(communitySlug);
     setStore(next);
-    saveStore(next);
-    if (!store.joined.includes(communitySlug)) {
+    if (isAuthenticated) {
+      toggleJoinedHub(communitySlug);
+    }
+    if (!wasJoined) {
       apiPost(`/api/subbridges/${communitySlug}/join`).catch(() => {});
     }
   };
@@ -132,22 +138,28 @@ export default function Community() {
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
-          {communities.map((c) => (
-            <Link href={`/d/${c.slug}`} key={c.slug} className="group overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-              <div className={`h-24 bg-gradient-to-br ${c.color}`} />
-              <div className="p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-xl font-black group-hover:text-blue-700">d/{c.slug}</h2>
-                    <p className="text-sm font-semibold text-slate-500">{c.name}</p>
+          {communities.map((c) => {
+            const joined = isJoined(c.slug);
+            return (
+              <Link href={`/d/${c.slug}`} key={c.slug} className="group overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md">
+                <div className={`h-24 bg-gradient-to-br ${c.color}`} />
+                <div className="p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h2 className="text-xl font-black group-hover:text-blue-700">d/{c.slug}</h2>
+                      <p className="text-sm font-semibold text-slate-500">{c.name}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      {joined && <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-800">Joined</span>}
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{c.members.toLocaleString()} members</span>
+                    </div>
                   </div>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{c.members.toLocaleString()} members</span>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">{c.description}</p>
+                  <div className="mt-4 flex flex-wrap gap-2">{(c.tags ?? []).map((tag) => <span key={tag} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800">{tag}</span>)}</div>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-slate-600">{c.description}</p>
-                <div className="mt-4 flex flex-wrap gap-2">{(c.tags ?? []).map((tag) => <span key={tag} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800">{tag}</span>)}</div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </div>
     );
@@ -165,7 +177,7 @@ export default function Community() {
               <div className="mt-3 flex items-center gap-2 text-sm font-semibold text-slate-500"><Users className="h-4 w-4" /> {community.members.toLocaleString()} members</div>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => toggleJoin(community.slug)} className={`rounded-full px-5 py-2 text-sm font-bold ${store.joined.includes(community.slug) ? "bg-slate-200 text-slate-700" : "bg-red-600 text-white hover:bg-red-700"}`}>{store.joined.includes(community.slug) ? "Joined" : "Join"}</button>
+              <button onClick={() => toggleJoin(community.slug)} className={`rounded-full px-5 py-2 text-sm font-bold ${isJoined(community.slug) ? "bg-blue-100 text-blue-800 hover:bg-blue-200" : "bg-red-600 text-white hover:bg-red-700"}`}>{isJoined(community.slug) ? "Joined" : "Join SubDiscourse"}</button>
               <Link href="/create" className="rounded-full border px-5 py-2 text-sm font-bold hover:bg-slate-50"><Plus className="mr-1 inline h-4 w-4" />Post</Link>
             </div>
           </div>

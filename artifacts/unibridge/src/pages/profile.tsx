@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Award, Bookmark, CalendarDays, Edit3, LogOut, MapPin, ShieldCheck, UserCircle, Users } from "lucide-react";
-import { loadStore, timeAgo } from "@/lib/community-store";
+import { loadStore, timeAgo, toggleJoinedInStore } from "@/lib/community-store";
 import { useAuth } from "@/lib/auth-context";
 
 export default function Profile() {
@@ -22,6 +22,11 @@ export default function Profile() {
     () => (store.posts ?? []).filter((post) => user?.savedPosts.includes(post.id)),
     [store.posts, user?.savedPosts]
   );
+
+  const toggleHubMembership = (slug: string) => {
+    toggleJoinedInStore(slug);
+    toggleJoinedHub(slug);
+  };
 
   if (!user) {
     return (
@@ -109,7 +114,7 @@ export default function Profile() {
                     <Link href={`/d/${community.slug}`} className="font-black hover:text-blue-700">d/{community.slug}</Link>
                     <p className="text-sm text-slate-500">{community.members.toLocaleString()} members</p>
                   </div>
-                  <button onClick={() => toggleJoinedHub(community.slug)} className={`rounded-full px-4 py-2 text-sm font-bold ${joined ? "bg-blue-100 text-blue-800" : "bg-red-600 text-white hover:bg-red-700"}`}>
+                  <button onClick={() => toggleHubMembership(community.slug)} className={`rounded-full px-4 py-2 text-sm font-bold ${joined ? "bg-blue-100 text-blue-800" : "bg-red-600 text-white hover:bg-red-700"}`}>
                     {joined ? "Joined" : "Join"}
                   </button>
                 </div>
