@@ -1,122 +1,178 @@
+export type ReportStatus = "open" | "reviewing" | "resolved" | "dismissed";
+export type ReportPriority = "low" | "medium" | "high";
+
 export type ModerationReport = {
   id: string;
   targetType: "post" | "comment" | "user" | "hub";
-  targetId: string;
-  title: string;
+  targetTitle: string;
+  hubSlug: string;
   reason: string;
   details: string;
-  status: "open" | "reviewing" | "resolved" | "dismissed";
+  status: ReportStatus;
+  priority: ReportPriority;
   createdAt: string;
 };
 
-export type ModerationAction = {
+export type Moderator = {
   id: string;
-  label: string;
-  description: string;
-  createdAt: string;
+  name: string;
+  role: "Super Admin" | "Moderator" | "Mentor Moderator";
+  hubSlug: string;
+  active: boolean;
 };
 
-const REPORTS_KEY = "collegediscourse-moderation-reports-v1";
-const ACTIONS_KEY = "collegediscourse-moderation-actions-v1";
+export type SafetySettings = {
+  blockedWords: string[];
+  antiAgentMode: boolean;
+  requireCountryDeadline: boolean;
+  autoFlagRepeatedPosts: boolean;
+  postingLimitPerHour: number;
+};
 
-const seedReports: ModerationReport[] = [
-  {
-    id: "r1",
-    targetType: "post",
-    targetId: "p1",
-    title: "Verify scholarship link before pinning",
-    reason: "Scholarship verification",
-    details: "A funding opportunity was shared without a direct university or funder page. Please verify before promoting it.",
-    status: "open",
-    createdAt: new Date(Date.now() - 1000 * 60 * 35).toISOString(),
-  },
-  {
-    id: "r2",
-    targetType: "comment",
-    targetId: "c2",
-    title: "Possible paid-agent bait",
-    reason: "Spam / solicitation",
-    details: "A reply asks students to contact a private agent outside the platform.",
-    status: "reviewing",
-    createdAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-  },
-];
+export type ModerationStore = {
+  reports: ModerationReport[];
+  moderators: Moderator[];
+  safety: SafetySettings;
+};
 
-const seedActions: ModerationAction[] = [
-  {
-    id: "a1",
-    label: "Scholarship verification checklist",
-    description: "Require country, deadline, funder link, eligibility, award value, and official source.",
-    createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-  },
-  {
-    id: "a2",
-    label: "Clear title rule",
-    description: "Encourage titles that mention country, degree level, topic, and deadline where relevant.",
-    createdAt: new Date(Date.now() - 1000 * 60 * 220).toISOString(),
-  },
-];
+const MODERATION_KEY = "collegediscourse-moderation-v1";
 
-function readJson<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  const raw = window.localStorage.getItem(key);
+const seedStore: ModerationStore = {
+  reports: [
+    {
+      id: "r1",
+      targetType: "post",
+      targetTitle: "Guaranteed scholarship if you pay processing fee",
+      hubSlug: "scholarships",
+      reason: "Potential scam scholarship",
+      details: "The post asks students to pay before seeing the application link.",
+      status: "open",
+      priority: "high",
+      createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+    },
+    {
+      id: "r2",
+      targetType: "comment",
+      targetTitle: "Agent contact posted repeatedly",
+      hubSlug: "study-abroad",
+      reason: "Repeated agent spam",
+      details: "Same phone number appears across multiple comments.",
+      status: "reviewing",
+      priority: "medium",
+      createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+    },
+    {
+      id: "r3",
+      targetType: "post",
+      targetTitle: "Missing deadline and country information",
+      hubSlug: "scholarships",
+      reason: "Incomplete scholarship post",
+      details: "Scholarship post has no country, level, eligibility, or deadline.",
+      status: "open",
+      priority: "low",
+      createdAt: new Date(Date.now() - 1000 * 60 * 200).toISOString(),
+    },
+  ],
+  moderators: [
+    { id: "m1", name: "Demo Student", role: "Super Admin", hubSlug: "all", active: true },
+    { id: "m2", name: "Scholarship Mentor", role: "Moderator", hubSlug: "scholarships", active: true },
+    { id: "m3", name: "Research Mentor", role: "Mentor Moderator", hubSlug: "research-help", active: true },
+  ],
+  safety: {
+    blockedWords: ["pay first", "guaranteed visa", "agent fee"],
+    antiAgentMode: true,
+    requireCountryDeadline: true,
+    autoFlagRepeatedPosts: true,
+    postingLimitPerHour: 6,
+  },
+};
+
+export function loadModerationStore(): ModerationStore {
+  if (typeof window === "undefined") return seedStore;
+  const raw = window.localStorage.getItem(MODERATION_KEY);
   if (!raw) {
-    window.localStorage.setItem(key, JSON.stringify(fallback));
-    return fallback;
+    window.localStorage.setItem(MODERATION_KEY, JSON.stringify(seedStore));
+    return seedStore;
   }
   try {
-    return JSON.parse(raw) as T;
+    const parsed = JSON.parse(raw) as Partial<ModerationStore>;
+    return {
+      reports: parsed.reports ?? seedStore.reports,
+      moderators: parsed.moderators ?? seedStore.moderators,
+      safety: { ...seedStore.safety, ...(parsed.safety ?? {}) },
+    };
   } catch {
-    return fallback;
+    return seedStore;
   }
 }
 
-function writeJson<T>(key: string, value: T) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(key, JSON.stringify(value));
+export function saveModerationStore(store: ModerationStore) {
+  window.localStorage.setItem(MODERATION_KEY, JSON.stringify(store));
   window.dispatchEvent(new Event("collegediscourse-moderation-updated"));
 }
 
-export function loadReports() {
-  return readJson<ModerationReport[]>(REPORTS_KEY, seedReports);
+export function updateReportStatus(id: string, status: ReportStatus) {
+  const store = loadModerationStore();
+  const next = {
+    ...store,
+    reports: store.reports.map((report) => (report.id === id ? { ...report, status } : report)),
+  };
+  saveModerationStore(next);
+  return next;
 }
 
-export function saveReports(reports: ModerationReport[]) {
-  writeJson(REPORTS_KEY, reports);
-}
-
-export function loadActions() {
-  return readJson<ModerationAction[]>(ACTIONS_KEY, seedActions);
-}
-
-export function saveActions(actions: ModerationAction[]) {
-  writeJson(ACTIONS_KEY, actions);
-}
-
-export function createReport(input: Omit<ModerationReport, "id" | "status" | "createdAt">) {
-  const reports = loadReports();
+export function addReport(input: Omit<ModerationReport, "id" | "createdAt" | "status">) {
+  const store = loadModerationStore();
   const report: ModerationReport = {
     ...input,
     id: `r-${Date.now()}`,
-    status: "open",
     createdAt: new Date().toISOString(),
+    status: "open",
   };
-  saveReports([report, ...reports]);
-  return report;
-}
-
-export function updateReportStatus(id: string, status: ModerationReport["status"]) {
-  const reports = loadReports().map((report) =>
-    report.id === id ? { ...report, status } : report,
-  );
-  saveReports(reports);
-  return reports;
+  const next = { ...store, reports: [report, ...store.reports] };
+  saveModerationStore(next);
+  return next;
 }
 
 export function clearResolvedReports() {
-  const reports = loadReports().filter(
-    (report) => report.status !== "resolved" && report.status !== "dismissed",
-  );
-  saveReports(reports);
-  return reports;
+  const store = loadModerationStore();
+  const next = {
+    ...store,
+    reports: store.reports.filter((report) => report.status !== "resolved" && report.status !== "dismissed"),
+  };
+  saveModerationStore(next);
+  return next;
+}
+
+export function addModerator(name: string, hubSlug: string, role: Moderator["role"] = "Moderator") {
+  const store = loadModerationStore();
+  const moderator: Moderator = {
+    id: `m-${Date.now()}`,
+    name,
+    hubSlug,
+    role,
+    active: true,
+  };
+  const next = { ...store, moderators: [moderator, ...store.moderators] };
+  saveModerationStore(next);
+  return next;
+}
+
+export function toggleModerator(id: string) {
+  const store = loadModerationStore();
+  const next = {
+    ...store,
+    moderators: store.moderators.map((moderator) =>
+      moderator.id === id ? { ...moderator, active: !moderator.active } : moderator,
+    ),
+  };
+  saveModerationStore(next);
+  return next;
+}
+
+export function saveSafetySettings(safety: SafetySettings) {
+  const store = loadModerationStore();
+  const next = { ...store, safety };
+  saveModerationStore(next);
+  return next;
 }

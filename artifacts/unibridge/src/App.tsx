@@ -10,6 +10,9 @@ import SavedPosts from "@/pages/saved-posts";
 import NotificationsPage from "@/pages/notifications";
 import SearchPage from "@/pages/search";
 import Moderation from "@/pages/moderation";
+import ModerationReports from "@/pages/moderation-reports";
+import ModerationModerators from "@/pages/moderation-moderators";
+import ModerationSafety from "@/pages/moderation-safety";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth";
 import Profile from "@/pages/profile";
@@ -33,6 +36,9 @@ function App() {
           <Route path="/notifications" component={NotificationsPage} />
           <Route path="/search" component={SearchPage} />
           <Route path="/moderation" component={Moderation} />
+          <Route path="/moderation/reports" component={ModerationReports} />
+          <Route path="/moderation/moderators" component={ModerationModerators} />
+          <Route path="/moderation/safety" component={ModerationSafety} />
           <Route path="/auth" component={AuthPage} />
           <Route path="/login" component={AuthPage} />
           <Route path="/profile" component={Profile} />
