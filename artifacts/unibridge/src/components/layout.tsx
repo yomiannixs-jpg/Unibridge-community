@@ -11,6 +11,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/communities", label: "Hubs", icon: Users },
     { href: "/create", label: "Create Post", icon: Plus },
     { href: "/messages", label: "Messages", icon: MessageSquare },
+    { href: "/saved", label: "Saved Posts", icon: Bookmark },
     { href: "/resources", label: "Resources", icon: Bookmark },
     { href: "/moderation", label: "Moderation", icon: ShieldCheck },
     { href: "/profile", label: "Profile", icon: UserCircle },

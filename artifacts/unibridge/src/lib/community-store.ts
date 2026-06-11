@@ -287,6 +287,7 @@ export type Store = {
   comments: Comment[];
   saved: string[];
   joined: string[];
+  voted: string[];
 };
 
 function mergeCommunities(savedCommunities?: Community[]) {
@@ -303,6 +304,8 @@ export function loadStore(): Store {
       comments: seedComments,
       saved: ["p3"],
       joined: ["research-help", "scholarships"],
+      voted: [],
+      voted: [],
     };
   }
 
@@ -315,6 +318,8 @@ export function loadStore(): Store {
       comments: seedComments,
       saved: ["p3"],
       joined: ["research-help", "scholarships"],
+      voted: [],
+      voted: [],
     };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
     return initial;
@@ -328,6 +333,7 @@ export function loadStore(): Store {
       comments: parsed.comments?.length ? parsed.comments : seedComments,
       saved: parsed.saved ?? [],
       joined: parsed.joined ?? [],
+      voted: parsed.voted ?? [],
     };
   } catch {
     return {
@@ -336,6 +342,7 @@ export function loadStore(): Store {
       comments: seedComments,
       saved: [],
       joined: [],
+      voted: [],
     };
   }
 }
@@ -365,4 +372,29 @@ export function timeAgo(input: string) {
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
   return `${Math.floor(seconds / 86400)}d ago`;
+}
+
+
+export function toggleSavedInStore(postId: string): Store {
+  const store = loadStore();
+  const saved = store.saved.includes(postId)
+    ? store.saved.filter((id) => id !== postId)
+    : [...store.saved, postId];
+  const next = { ...store, saved };
+  saveStore(next);
+  return next;
+}
+
+export function markPostVotedInStore(postId: string): Store {
+  const store = loadStore();
+  if (store.voted.includes(postId)) return store;
+  const next = {
+    ...store,
+    voted: [...store.voted, postId],
+    posts: (store.posts ?? []).map((post) =>
+      post.id === postId ? { ...post, votes: post.votes + 1 } : post,
+    ),
+  };
+  saveStore(next);
+  return next;
 }

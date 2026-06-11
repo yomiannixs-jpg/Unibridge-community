@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { ArrowBigUp, Bookmark, MessageCircle, Users } from "lucide-react";
-import { loadStore, saveStore, timeAgo, type Post } from "@/lib/community-store";
+import { loadStore, saveStore, timeAgo, toggleSavedInStore, markPostVotedInStore, type Post } from "@/lib/community-store";
 import { apiGet, apiPost } from "@/lib/api";
 
 function PostCard({ post, onVote, onSave, saved }: { post: Post; onVote: (id: string) => void; onSave: (id: string) => void; saved: boolean }) {
@@ -100,14 +100,15 @@ export default function Home() {
   };
 
   const votePost = (id: string) => {
-    updatePost(id, (p) => ({ ...p, votes: p.votes + 1 }));
+    if (store.voted?.includes(id)) return;
+    const next = markPostVotedInStore(id);
+    setStore(next);
     apiPost(`/api/subbridge-posts/${id}/upvote`).catch(() => {});
   };
 
   const toggleSave = (id: string) => {
-    const saved = store.saved.includes(id) ? store.saved.filter((x) => x !== id) : [...store.saved, id];
-    const next = { ...store, saved };
-    setStore(next); saveStore(next);
+    const next = toggleSavedInStore(id);
+    setStore(next);
     apiPost(`/api/subbridge-posts/${id}/save`).catch(() => {});
   };
 

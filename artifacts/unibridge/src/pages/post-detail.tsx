@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "wouter";
 import { ArrowBigUp, Bookmark, MessageCircle, Send } from "lucide-react";
-import { loadStore, saveStore, timeAgo, type Comment } from "@/lib/community-store";
+import { loadStore, saveStore, timeAgo, toggleSavedInStore, markPostVotedInStore, type Comment } from "@/lib/community-store";
 import { apiGet, apiPost } from "@/lib/api";
 
 function CommentView({ comment }: { comment: Comment }) {
@@ -56,15 +56,15 @@ export default function PostDetail() {
   }
 
   const vote = () => {
-    const next = { ...store, posts: (store.posts ?? []).map((p) => p.id === post.id ? { ...p, votes: p.votes + 1 } : p) };
-    setStore(next); saveStore(next);
+    if (store.voted?.includes(post.id)) return;
+    const next = markPostVotedInStore(post.id);
+    setStore(next);
     apiPost(`/api/subbridge-posts/${post.id}/upvote`).catch(() => {});
   };
 
   const toggleSave = () => {
-    const saved = store.saved.includes(post.id) ? store.saved.filter((x) => x !== post.id) : [...store.saved, post.id];
-    const next = { ...store, saved };
-    setStore(next); saveStore(next);
+    const next = toggleSavedInStore(post.id);
+    setStore(next);
     apiPost(`/api/subbridge-posts/${post.id}/save`).catch(() => {});
   };
 

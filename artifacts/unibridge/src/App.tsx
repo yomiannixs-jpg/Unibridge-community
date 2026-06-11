@@ -6,6 +6,7 @@ import PostDetail from "@/pages/post-detail";
 import NewPost from "@/pages/new-post";
 import Messages from "@/pages/messages";
 import Resources from "@/pages/resources";
+import SavedPosts from "@/pages/saved-posts";
 import Moderation from "@/pages/moderation";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth";
@@ -26,6 +27,7 @@ function App() {
           <Route path="/new-post" component={NewPost} />
           <Route path="/messages" component={Messages} />
           <Route path="/resources" component={Resources} />
+          <Route path="/saved" component={SavedPosts} />
           <Route path="/moderation" component={Moderation} />
           <Route path="/auth" component={AuthPage} />
           <Route path="/login" component={AuthPage} />
