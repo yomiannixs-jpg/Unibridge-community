@@ -146,7 +146,19 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="rounded-3xl border bg-white p-4 shadow-sm"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search posts, tags, SubDiscourses, scholarships, visas, research help..." className="w-full rounded-2xl border bg-slate-50 px-4 py-3 text-sm outline-none focus:border-blue-300" /></div>
+      <div className="rounded-3xl border bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search posts, tags, SubDiscourses, scholarships, visas, research help..."
+            className="w-full rounded-2xl border bg-slate-50 px-4 py-3 text-sm outline-none focus:border-blue-300"
+          />
+          <Link href={`/search${search.trim() ? `?q=${encodeURIComponent(search.trim())}` : ""}`} className="rounded-2xl bg-blue-800 px-5 py-3 text-center text-sm font-bold text-white hover:bg-blue-900">
+            Search all
+          </Link>
+        </div>
+      </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1">
         <button onClick={() => setFilter("all")} className={`rounded-full px-4 py-2 text-sm font-bold ${filter === "all" ? "bg-slate-950 text-white" : "bg-white text-slate-600 border"}`}>All</button>
@@ -165,6 +177,37 @@ export default function Home() {
           );
         })}
       </div>
+
+      <section className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-3xl border bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-black">Trending posts</h2>
+            <Link href="/search" className="text-sm font-bold text-blue-700 hover:text-blue-900">View all</Link>
+          </div>
+          <div className="mt-4 space-y-3">
+            {uniquePosts.slice(0, 3).map((post) => (
+              <Link key={post.id} href={`/posts/${post.id}`} className="block rounded-2xl bg-slate-50 p-4 hover:bg-blue-50">
+                <div className="text-xs font-bold text-blue-800">d/{post.communitySlug} · {post.votes} votes</div>
+                <div className="mt-1 text-sm font-black text-slate-950">{post.title}</div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-3xl border bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-black">Discover Hubs</h2>
+            <Link href="/communities" className="text-sm font-bold text-blue-700 hover:text-blue-900">Explore</Link>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {(store.communities ?? []).slice(0, 8).map((hub) => (
+              <Link key={hub.slug} href={`/d/${hub.slug}`} className="rounded-full border bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-800">
+                d/{hub.slug}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <div className="grid gap-4">
         {uniquePosts.map((post) => <PostCard key={post.id} post={post} saved={store.saved.includes(post.id)} onVote={votePost} onSave={toggleSave} />)}
