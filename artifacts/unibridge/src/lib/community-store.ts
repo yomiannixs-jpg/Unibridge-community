@@ -305,7 +305,6 @@ export function loadStore(): Store {
       saved: ["p3"],
       joined: ["research-help", "scholarships"],
       voted: [],
-      voted: [],
     };
   }
 
@@ -318,7 +317,6 @@ export function loadStore(): Store {
       comments: seedComments,
       saved: ["p3"],
       joined: ["research-help", "scholarships"],
-      voted: [],
       voted: [],
     };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));

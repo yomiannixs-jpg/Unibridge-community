@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { ArrowBigUp, Bookmark, MessageCircle, Users } from "lucide-react";
 import { loadStore, saveStore, timeAgo, toggleSavedInStore, markPostVotedInStore, type Post } from "@/lib/community-store";
 import { apiGet, apiPost } from "@/lib/api";
+import { addNotification } from "@/lib/notifications";
 
 function PostCard({ post, onVote, onSave, saved }: { post: Post; onVote: (id: string) => void; onSave: (id: string) => void; saved: boolean }) {
   return (
@@ -103,12 +104,30 @@ export default function Home() {
     if (store.voted?.includes(id)) return;
     const next = markPostVotedInStore(id);
     setStore(next);
+    const votedPost = (store.posts ?? []).find((post) => post.id === id);
+    if (votedPost) {
+      addNotification({
+        type: "vote",
+        title: "Vote recorded",
+        message: `Your upvote was added to “${votedPost.title}”.`,
+        href: `/posts/${id}`,
+      });
+    }
     apiPost(`/api/subbridge-posts/${id}/upvote`).catch(() => {});
   };
 
   const toggleSave = (id: string) => {
     const next = toggleSavedInStore(id);
     setStore(next);
+    const savedPost = (store.posts ?? []).find((post) => post.id === id);
+    if (savedPost) {
+      addNotification({
+        type: "save",
+        title: next.saved.includes(id) ? "Post saved" : "Post removed from saved",
+        message: next.saved.includes(id) ? `You saved “${savedPost.title}”.` : `You removed “${savedPost.title}” from saved posts.`,
+        href: next.saved.includes(id) ? "/saved" : `/posts/${id}`,
+      });
+    }
     apiPost(`/api/subbridge-posts/${id}/save`).catch(() => {});
   };
 

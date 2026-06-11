@@ -3,6 +3,7 @@ import { Link, useParams } from "wouter";
 import { ArrowBigUp, Bookmark, MessageCircle, Send } from "lucide-react";
 import { loadStore, saveStore, timeAgo, toggleSavedInStore, markPostVotedInStore, type Comment } from "@/lib/community-store";
 import { apiGet, apiPost } from "@/lib/api";
+import { addNotification } from "@/lib/notifications";
 
 function CommentView({ comment }: { comment: Comment }) {
   return (
@@ -59,12 +60,24 @@ export default function PostDetail() {
     if (store.voted?.includes(post.id)) return;
     const next = markPostVotedInStore(post.id);
     setStore(next);
+    addNotification({
+      type: "vote",
+      title: "Vote recorded",
+      message: `Your upvote was added to “${post.title}”.`,
+      href: `/posts/${post.id}`,
+    });
     apiPost(`/api/subbridge-posts/${post.id}/upvote`).catch(() => {});
   };
 
   const toggleSave = () => {
     const next = toggleSavedInStore(post.id);
     setStore(next);
+    addNotification({
+      type: "save",
+      title: next.saved.includes(post.id) ? "Post saved" : "Post removed from saved",
+      message: next.saved.includes(post.id) ? `You saved “${post.title}”.` : `You removed “${post.title}” from saved posts.`,
+      href: next.saved.includes(post.id) ? "/saved" : `/posts/${post.id}`,
+    });
     apiPost(`/api/subbridge-posts/${post.id}/save`).catch(() => {});
   };
 
@@ -77,6 +90,12 @@ export default function PostDetail() {
     } catch {}
     const next = { ...store, comments: [newComment, ...(store.comments ?? [])], posts: (store.posts ?? []).map((p) => p.id === post.id ? { ...p, comments: p.comments + 1 } : p) };
     setStore(next); saveStore(next); setBody("");
+    addNotification({
+      type: "comment",
+      title: "Comment added",
+      message: `Your comment was added to “${post.title}”.`,
+      href: `/posts/${post.id}`,
+    });
   };
 
   return (

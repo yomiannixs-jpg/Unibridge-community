@@ -1,171 +1,132 @@
-import { useState, useRef, useEffect } from "react";
-import { Bell } from "lucide-react";
-import { useAuth } from "@/lib/auth-context";
-import {
-  useGetUnreadCount,
-  useListNotifications,
-  useMarkAllRead,
-  useMarkNotificationRead,
-  getGetUnreadCountQueryKey,
-  getListNotificationsQueryKey,
-} from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { Bell, CheckCheck, Trash2 } from "lucide-react";
 import { Link } from "wouter";
+import {
+  NOTIFICATION_EVENT,
+  clearAllNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+  notificationTimeAgo,
+  readNotifications,
+  type CollegeDiscourseNotification,
+} from "@/lib/notifications";
 
-function timeAgo(date: string | Date) {
-  const d = typeof date === "string" ? new Date(date) : date;
-  const seconds = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  return `${Math.floor(seconds / 86400)}d ago`;
+function notificationTone(type: CollegeDiscourseNotification["type"]) {
+  if (type === "reply" || type === "comment") return "bg-blue-100 text-blue-800";
+  if (type === "vote") return "bg-emerald-100 text-emerald-800";
+  if (type === "save") return "bg-purple-100 text-purple-800";
+  if (type === "hub") return "bg-cyan-100 text-cyan-800";
+  return "bg-slate-100 text-slate-700";
 }
 
 export function NotificationBell() {
-  const { userId } = useAuth();
   const [open, setOpen] = useState(false);
+  const [notifications, setNotifications] = useState(readNotifications());
   const ref = useRef<HTMLDivElement>(null);
-  const qc = useQueryClient();
 
-  const { data: unreadData } = useGetUnreadCount(
-    { userId },
-    {
-      query: {
-        queryKey: getGetUnreadCountQueryKey({ userId }),
-        refetchInterval: 15000,
-        enabled: !!userId,
-      },
-    }
-  );
-
-  const { data: notifications, isLoading } = useListNotifications(
-    { userId },
-    {
-      query: {
-        queryKey: getListNotificationsQueryKey({ userId }),
-        enabled: open && !!userId,
-      },
-    }
-  );
-
-  const markAllRead = useMarkAllRead({
-    mutation: {
-      onSuccess: () => {
-        qc.invalidateQueries({ queryKey: getGetUnreadCountQueryKey({ userId }) });
-        qc.invalidateQueries({ queryKey: getListNotificationsQueryKey({ userId }) });
-      },
-    },
-  });
-
-  const markOneRead = useMarkNotificationRead({
-    mutation: {
-      onSuccess: () => {
-        qc.invalidateQueries({ queryKey: getGetUnreadCountQueryKey({ userId }) });
-        qc.invalidateQueries({ queryKey: getListNotificationsQueryKey({ userId }) });
-      },
-    },
-  });
+  useEffect(() => {
+    const sync = () => setNotifications(readNotifications());
+    window.addEventListener(NOTIFICATION_EVENT, sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(NOTIFICATION_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
     if (open) document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
-  const unreadCount = unreadData?.count ?? 0;
+  const unread = notifications.filter((notification) => !notification.read).length;
 
-  function handleOpen() {
-    setOpen((v) => !v);
-  }
+  const markAll = () => {
+    markAllNotificationsRead();
+    setNotifications(readNotifications());
+  };
 
-  function handleMarkAllRead() {
-    markAllRead.mutate({ data: { userId } });
-  }
+  const clear = () => {
+    clearAllNotifications();
+    setNotifications([]);
+  };
 
-  function handleClickNotification(id: number, read: boolean) {
-    if (!read) {
-      markOneRead.mutate({ id });
-    }
+  const markOne = (id: string) => {
+    markNotificationRead(id);
+    setNotifications(readNotifications());
     setOpen(false);
-  }
+  };
 
   return (
     <div className="relative" ref={ref}>
       <button
-        onClick={handleOpen}
-        className="relative p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        onClick={() => setOpen((value) => !value)}
+        className="relative rounded-full border bg-white p-2 text-slate-600 hover:text-slate-950"
         aria-label="Notifications"
       >
-        <Bell className="w-5 h-5" />
-        {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center leading-none">
-            {unreadCount > 9 ? "9+" : unreadCount}
+        <Bell className="h-5 w-5" />
+        {unread > 0 && (
+          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
+            {unread > 9 ? "9+" : unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <span className="font-semibold text-sm text-foreground">Notifications</span>
-            {unreadCount > 0 && (
-              <button
-                onClick={handleMarkAllRead}
-                className="text-xs text-primary hover:underline"
-              >
-                Mark all read
+        <div className="absolute right-0 top-full z-50 mt-3 w-[22rem] overflow-hidden rounded-3xl border bg-white shadow-xl">
+          <div className="flex items-center justify-between border-b px-4 py-3">
+            <div>
+              <p className="text-sm font-black text-slate-950">Notifications</p>
+              <p className="text-xs text-slate-500">Replies, votes, saved posts, and Hub alerts</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={markAll} className="rounded-full p-2 text-slate-500 hover:bg-blue-50 hover:text-blue-700" title="Mark all read">
+                <CheckCheck className="h-4 w-4" />
               </button>
-            )}
+              <button onClick={clear} className="rounded-full p-2 text-slate-500 hover:bg-red-50 hover:text-red-700" title="Clear notifications">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
-          <div className="max-h-80 overflow-y-auto">
-            {isLoading ? (
-              <div className="p-4 space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex gap-3 animate-pulse">
-                    <div className="w-8 h-8 rounded-full bg-muted shrink-0" />
-                    <div className="flex-1 space-y-1.5">
-                      <div className="h-3 bg-muted rounded w-3/4" />
-                      <div className="h-3 bg-muted rounded w-1/2" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : !notifications || notifications.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground text-sm">
-                No notifications yet. When someone likes or comments on your posts, you'll see it here.
+          <div className="max-h-96 overflow-y-auto p-2">
+            {notifications.length === 0 ? (
+              <div className="p-8 text-center text-sm text-slate-500">
+                No notifications yet. Replies, mentions, saved-post updates, and Hub activity will appear here.
               </div>
             ) : (
-              notifications.map((n) => (
+              notifications.map((notification) => (
                 <Link
-                  key={n.id}
-                  href={n.postId ? `/posts/${n.postId}` : "/"}
-                  onClick={() => handleClickNotification(n.id, n.read)}
-                  className={`flex gap-3 px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0 ${!n.read ? "bg-primary/5" : ""}`}
+                  key={notification.id}
+                  href={notification.href}
+                  onClick={() => markOne(notification.id)}
+                  className={`block rounded-2xl p-3 transition hover:bg-slate-50 ${!notification.read ? "bg-blue-50/70" : ""}`}
                 >
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary font-bold text-sm">
-                    {(n.actorDisplayName ?? n.actorUsername ?? "?")[0]?.toUpperCase()}
+                  <div className="flex items-start gap-3">
+                    <span className={`rounded-full px-2 py-1 text-[10px] font-black uppercase ${notificationTone(notification.type)}`}>
+                      {notification.type}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate text-sm font-black text-slate-950">{notification.title}</p>
+                        {!notification.read && <span className="h-2 w-2 shrink-0 rounded-full bg-blue-700" />}
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-600">{notification.message}</p>
+                      <p className="mt-2 text-[11px] font-bold text-slate-400">{notificationTimeAgo(notification.createdAt)}</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground leading-snug">
-                      <span className="font-medium">{n.actorDisplayName ?? n.actorUsername}</span>
-                      {n.type === "like" ? " liked" : " commented on"} your post
-                      {n.postTitle && (
-                        <span className="text-muted-foreground"> &ldquo;{n.postTitle.slice(0, 40)}{n.postTitle.length > 40 ? "..." : ""}&rdquo;</span>
-                      )}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{timeAgo(n.createdAt)}</p>
-                  </div>
-                  {!n.read && (
-                    <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
-                  )}
                 </Link>
               ))
             )}
+          </div>
+
+          <div className="border-t p-3">
+            <Link href="/notifications" onClick={() => setOpen(false)} className="block rounded-full bg-slate-950 px-4 py-2 text-center text-xs font-black text-white hover:bg-blue-800">
+              View notification center
+            </Link>
           </div>
         </div>
       )}

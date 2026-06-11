@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
-import { Bell, Bookmark, Compass, Home, LogIn, MessageSquare, Plus, Search, ShieldCheck, UserCircle, Users } from "lucide-react";
+import { Bookmark, Compass, Home, LogIn, MessageSquare, Plus, Search, ShieldCheck, UserCircle, Users } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { NotificationBell } from "@/components/notification-bell";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -12,6 +13,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/create", label: "Create Post", icon: Plus },
     { href: "/messages", label: "Messages", icon: MessageSquare },
     { href: "/saved", label: "Saved Posts", icon: Bookmark },
+    { href: "/notifications", label: "Notifications", icon: MessageSquare },
     { href: "/resources", label: "Resources", icon: Bookmark },
     { href: "/moderation", label: "Moderation", icon: ShieldCheck },
     { href: "/profile", label: "Profile", icon: UserCircle },
@@ -40,10 +42,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {isAuthenticated ? user?.displayName : "Login"}
           </Link>
 
-          <button className="relative rounded-full border bg-white p-2 text-slate-600 hover:text-slate-950">
-            <Bell className="h-5 w-5" />
-            <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-600" />
-          </button>
+          <NotificationBell />
         </div>
       </header>
 
