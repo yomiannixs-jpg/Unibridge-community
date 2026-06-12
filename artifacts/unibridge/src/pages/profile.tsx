@@ -16,6 +16,8 @@ import { useAuth } from "@/lib/auth-context";
 import { loadStore } from "@/lib/community-store";
 import { loadReputationStore } from "@/lib/reputation-store";
 import { loadSocialStore, timeAgoShort, type SocialStore } from "@/lib/social-store";
+import { loadPresenceUsers } from "@/lib/presence-store";
+import { PresenceBadge, PresenceDot } from "@/components/presence-badge";
 
 function StatCard({
   href,
@@ -44,6 +46,11 @@ export default function Profile() {
   const [social, setSocial] = useState<SocialStore>(() => loadSocialStore());
   const [store, setStore] = useState(() => loadStore());
   const reputation = useMemo(() => loadReputationStore(), []);
+  const presenceUsers = useMemo(() => loadPresenceUsers(), []);
+  const currentPresence = presenceUsers.find((person) => person.id === "current-user") ?? {
+    status: "online" as const,
+    lastSeen: new Date().toISOString(),
+  };
 
   useEffect(() => {
     const sync = () => {
@@ -77,6 +84,9 @@ export default function Profile() {
     savedPosts: [],
   };
 
+  const displayName = currentUser.name ?? "Demo Student";
+  const displayEmail = currentUser.email ?? "demo@collegediscourse.app";
+
   const joinedHubs = store.communities.filter((hub) =>
     (store.joined ?? currentUser.joinedHubs ?? []).includes(hub.slug),
   );
@@ -89,20 +99,24 @@ export default function Profile() {
       <section className="rounded-[2rem] border bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-800 text-2xl font-black text-white">
-              {(currentUser.name ?? "Demo Student").charAt(0).toUpperCase()}
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-800 text-2xl font-black text-white">
+              {displayName.charAt(0).toUpperCase()}
+              <span className="absolute -bottom-1 -right-1">
+                <PresenceDot status={currentPresence.status} />
+              </span>
             </div>
 
             <div>
-              <h1 className="text-3xl font-black">{currentUser.name ?? "Demo Student"}</h1>
-              <p className="text-sm text-slate-500">{currentUser.email ?? "demo@collegediscourse.app"}</p>
+              <h1 className="text-3xl font-black">{displayName}</h1>
+              <p className="text-sm text-slate-500">{displayEmail}</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800">
-                  {currentUser.role}
+                  {currentUser.role ?? "Verified User"}
                 </span>
                 <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
                   {reputationScore} reputation
                 </span>
+                <PresenceBadge status={currentPresence.status} lastSeen={currentPresence.lastSeen} />
                 {isAuthenticated && (
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
                     Signed in
@@ -119,6 +133,12 @@ export default function Profile() {
             >
               <PenLine className="h-4 w-4" />
               Edit profile
+            </Link>
+            <Link
+              href="/presence"
+              className="inline-flex items-center gap-2 rounded-full border px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100"
+            >
+              Set status
             </Link>
             <Link
               href="/activity"
@@ -148,22 +168,10 @@ export default function Profile() {
           <p className="mt-4 text-sm leading-7 text-slate-600">{currentUser.bio}</p>
 
           <div className="mt-5 grid gap-3 text-sm text-slate-600 md:grid-cols-2">
-            <div>
-              <b className="text-slate-900">Country</b>
-              <p>{currentUser.country}</p>
-            </div>
-            <div>
-              <b className="text-slate-900">Degree Level</b>
-              <p>{currentUser.degreeLevel}</p>
-            </div>
-            <div>
-              <b className="text-slate-900">Institution</b>
-              <p>{currentUser.institution}</p>
-            </div>
-            <div>
-              <b className="text-slate-900">Field</b>
-              <p>{currentUser.fieldOfStudy}</p>
-            </div>
+            <div><b className="text-slate-900">Country</b><p>{currentUser.country}</p></div>
+            <div><b className="text-slate-900">Degree Level</b><p>{currentUser.degreeLevel}</p></div>
+            <div><b className="text-slate-900">Institution</b><p>{currentUser.institution}</p></div>
+            <div><b className="text-slate-900">Field</b><p>{currentUser.fieldOfStudy}</p></div>
           </div>
         </div>
 
@@ -206,11 +214,7 @@ export default function Profile() {
         <div className="mt-5 flex flex-wrap gap-2">
           {joinedHubs.length ? (
             joinedHubs.map((hub) => (
-              <Link
-                key={hub.slug}
-                href={`/d/${hub.slug}`}
-                className="rounded-full bg-blue-50 px-4 py-2 text-sm font-bold text-blue-800 hover:bg-blue-100"
-              >
+              <Link key={hub.slug} href={`/d/${hub.slug}`} className="rounded-full bg-blue-50 px-4 py-2 text-sm font-bold text-blue-800 hover:bg-blue-100">
                 d/{hub.slug}
               </Link>
             ))
