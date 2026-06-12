@@ -7,6 +7,7 @@ import NewPost from "@/pages/new-post";
 import Messages from "@/pages/messages";
 import Resources from "@/pages/resources";
 import SavedPosts from "@/pages/saved-posts";
+import AccountSettings from "@/pages/account-settings";
 import NotificationsPage from "@/pages/notifications";
 import SearchPage from "@/pages/search";
 import Moderation from "@/pages/moderation";
@@ -36,6 +37,7 @@ function App() {
           <Route path="/messages" component={Messages} />
           <Route path="/resources" component={Resources} />
           <Route path="/saved" component={SavedPosts} />
+          <Route path="/account/settings" component={AccountSettings} />
           <Route path="/notifications" component={NotificationsPage} />
           <Route path="/search" component={SearchPage} />
           <Route path="/moderation/users" component={ModerationUsers} />

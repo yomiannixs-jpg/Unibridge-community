@@ -1,165 +1,126 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-export type AuthUser = {
+export type UserRole = "super_admin" | "moderator" | "mentor" | "verified" | "user";
+export type UserStatus = "active" | "muted" | "banned";
+
+export type CollegeDiscourseUser = {
   id: string;
+  name: string;
   email: string;
-  username: string;
-  displayName: string;
   avatarInitials: string;
   bio: string;
-  role: "Student" | "Mentor" | "Moderator" | "Admin";
-  location?: string;
-  joinedAt: string;
+  role: UserRole;
+  status: UserStatus;
   reputation: number;
   joinedHubs: string[];
   savedPosts: string[];
+  createdAt: string;
+  lastLoginAt: string;
 };
 
-type AuthContextType = {
-  user: AuthUser | null;
+type AuthContextValue = {
+  user: CollegeDiscourseUser | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<AuthUser>;
-  signup: (input: { email: string; password: string; username: string; displayName: string }) => Promise<AuthUser>;
+  login: (email: string, name?: string) => CollegeDiscourseUser;
+  signup: (payload: { name: string; email: string; bio?: string }) => CollegeDiscourseUser;
   logout: () => void;
-  updateProfile: (updates: Partial<AuthUser>) => void;
-  toggleJoinedHub: (slug: string) => void;
-  toggleSavedPost: (postId: string) => void;
+  updateProfile: (patch: Partial<Pick<CollegeDiscourseUser, "name" | "bio" | "avatarInitials">>) => void;
+  joinHub: (slug: string) => void;
+  leaveHub: (slug: string) => void;
+  savePost: (postId: string) => void;
+  unsavePost: (postId: string) => void;
 };
 
-const AUTH_USER_KEY = "collegediscourse-auth-user-v1";
-const AUTH_USERS_KEY = "collegediscourse-auth-users-v1";
-
-const demoUser: AuthUser = {
-  id: "u_demo",
-  email: "demo@collegediscourse.app",
-  username: "demo_student",
-  displayName: "Demo Student",
-  avatarInitials: "DS",
-  bio: "Exploring scholarships, research support, and study-abroad opportunities on CollegeDiscourse.",
-  role: "Student",
-  location: "Global",
-  joinedAt: new Date().toISOString(),
-  reputation: 128,
-  joinedHubs: ["scholarships", "research-help"],
-  savedPosts: ["p3"],
-};
-
-function readUsers(): AuthUser[] {
-  if (typeof window === "undefined") return [demoUser];
-  const raw = window.localStorage.getItem(AUTH_USERS_KEY);
-  if (!raw) {
-    window.localStorage.setItem(AUTH_USERS_KEY, JSON.stringify([demoUser]));
-    return [demoUser];
-  }
-  try {
-    const users = JSON.parse(raw) as AuthUser[];
-    return users.length ? users : [demoUser];
-  } catch {
-    return [demoUser];
-  }
-}
-
-function writeUsers(users: AuthUser[]) {
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
-  }
-}
+const AUTH_KEY = "collegediscourse-current-user-v2";
 
 function initialsFromName(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "CD";
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const letters = parts.length >= 2 ? `${parts[0][0]}${parts[1][0]}` : (parts[0]?.slice(0, 2) || "CD");
+  return letters.toUpperCase();
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+function makeUser(email: string, name?: string, bio?: string): CollegeDiscourseUser {
+  const safeName = name?.trim() || email.split("@")[0] || "CollegeDiscourse User";
+  const now = new Date().toISOString();
+  return {
+    id: `user-${Date.now()}`,
+    name: safeName,
+    email,
+    avatarInitials: initialsFromName(safeName),
+    bio: bio || "Exploring Hubs, scholarships, research support, and study-abroad opportunities on CollegeDiscourse.",
+    role: "verified",
+    status: "active",
+    reputation: 120,
+    joinedHubs: ["scholarships", "research-help"],
+    savedPosts: [],
+    createdAt: now,
+    lastLoginAt: now,
+  };
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    if (typeof window === "undefined") return null;
-    const raw = window.localStorage.getItem(AUTH_USER_KEY);
-    if (!raw) return null;
-    try {
-      return JSON.parse(raw) as AuthUser;
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState<CollegeDiscourseUser | null>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (user) window.localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
-    else window.localStorage.removeItem(AUTH_USER_KEY);
-  }, [user]);
+    try {
+      const raw = window.localStorage.getItem(AUTH_KEY);
+      if (raw) setUser(JSON.parse(raw));
+    } catch {
+      setUser(null);
+    }
+  }, []);
 
-  const value = useMemo<AuthContextType>(() => ({
+  const persist = (next: CollegeDiscourseUser | null) => {
+    setUser(next);
+    if (next) window.localStorage.setItem(AUTH_KEY, JSON.stringify(next));
+    else window.localStorage.removeItem(AUTH_KEY);
+    window.dispatchEvent(new Event("collegediscourse-auth-updated"));
+  };
+
+  const value = useMemo<AuthContextValue>(() => ({
     user,
-    isAuthenticated: !!user,
-    async login(email: string, _password: string) {
-      const users = readUsers();
-      const found = users.find((candidate) => candidate.email.toLowerCase() === email.toLowerCase()) || demoUser;
-      setUser(found);
-      return found;
+    isAuthenticated: Boolean(user),
+    login(email, name) {
+      const next = user
+        ? { ...user, email, name: name || user.name, lastLoginAt: new Date().toISOString() }
+        : makeUser(email, name);
+      persist(next);
+      return next;
     },
-    async signup(input) {
-      const users = readUsers();
-      const newUser: AuthUser = {
-        id: `u_${Date.now()}`,
-        email: input.email,
-        username: input.username || input.email.split("@")[0],
-        displayName: input.displayName || input.username || input.email.split("@")[0],
-        avatarInitials: initialsFromName(input.displayName || input.username || input.email),
-        bio: "New member of CollegeDiscourse.",
-        role: "Student",
-        location: "",
-        joinedAt: new Date().toISOString(),
-        reputation: 0,
-        joinedHubs: [],
-        savedPosts: [],
-      };
-      writeUsers([newUser, ...users.filter((candidate) => candidate.email.toLowerCase() !== input.email.toLowerCase())]);
-      setUser(newUser);
-      return newUser;
+    signup(payload) {
+      const next = makeUser(payload.email, payload.name, payload.bio);
+      persist(next);
+      return next;
     },
     logout() {
-      setUser(null);
+      persist(null);
     },
-    updateProfile(updates) {
-      setUser((current) => {
-        if (!current) return current;
-        const next = {
-          ...current,
-          ...updates,
-          avatarInitials: updates.displayName ? initialsFromName(updates.displayName) : current.avatarInitials,
-        };
-        const users = readUsers().map((candidate) => candidate.id === next.id ? next : candidate);
-        writeUsers(users.some((candidate) => candidate.id === next.id) ? users : [next, ...users]);
-        return next;
-      });
+    updateProfile(patch) {
+      if (!user) return;
+      const next = {
+        ...user,
+        ...patch,
+        avatarInitials: patch.avatarInitials || (patch.name ? initialsFromName(patch.name) : user.avatarInitials),
+      };
+      persist(next);
     },
-    toggleJoinedHub(slug) {
-      setUser((current) => {
-        if (!current) return current;
-        const joinedHubs = current.joinedHubs.includes(slug)
-          ? current.joinedHubs.filter((item) => item !== slug)
-          : [...current.joinedHubs, slug];
-        const next = { ...current, joinedHubs };
-        writeUsers(readUsers().map((candidate) => candidate.id === next.id ? next : candidate));
-        return next;
-      });
+    joinHub(slug) {
+      if (!user || user.joinedHubs.includes(slug)) return;
+      persist({ ...user, joinedHubs: [...user.joinedHubs, slug], reputation: user.reputation + 2 });
     },
-    toggleSavedPost(postId) {
-      setUser((current) => {
-        if (!current) return current;
-        const savedPosts = current.savedPosts.includes(postId)
-          ? current.savedPosts.filter((item) => item !== postId)
-          : [...current.savedPosts, postId];
-        const next = { ...current, savedPosts };
-        writeUsers(readUsers().map((candidate) => candidate.id === next.id ? next : candidate));
-        return next;
-      });
+    leaveHub(slug) {
+      if (!user) return;
+      persist({ ...user, joinedHubs: user.joinedHubs.filter((hub) => hub !== slug) });
+    },
+    savePost(postId) {
+      if (!user || user.savedPosts.includes(postId)) return;
+      persist({ ...user, savedPosts: [...user.savedPosts, postId], reputation: user.reputation + 1 });
+    },
+    unsavePost(postId) {
+      if (!user) return;
+      persist({ ...user, savedPosts: user.savedPosts.filter((id) => id !== postId) });
     },
   }), [user]);
 
@@ -167,9 +128,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
+  return ctx;
+}
+
+export function roleLabel(role: UserRole) {
+  return {
+    super_admin: "Super Admin",
+    moderator: "Moderator",
+    mentor: "Mentor",
+    verified: "Verified User",
+    user: "Regular User",
+  }[role];
 }
