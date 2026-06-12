@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "wouter";
 import { Users } from "lucide-react";
 import { isFollowing, loadSocialStore, toggleFollowPerson, type SocialPerson, type SocialStore } from "@/lib/social-store";
 import { loadPresenceUsers } from "@/lib/presence-store";
 import { PresenceBadge, PresenceDot } from "@/components/presence-badge";
+import { slugifyUser } from "@/lib/user-profiles-store";
 
 function PersonCard({ person, onToggle }: { person: SocialPerson; onToggle: (person: SocialPerson) => void }) {
   const presence = loadPresenceUsers().find((user) => user.name === person.name);
@@ -11,15 +13,16 @@ function PersonCard({ person, onToggle }: { person: SocialPerson; onToggle: (per
   return (
     <article className="rounded-3xl border bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-4">
-        <div className="flex min-w-0 items-start gap-4">
+        <Link href={`/u/${slugifyUser(person.name)}`} className="flex min-w-0 items-start gap-4">
           <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-800 font-black text-white">
             {person.avatar}
             <span className="absolute -bottom-1 -right-1">
               <PresenceDot status={presence?.status ?? "offline"} />
             </span>
           </div>
+
           <div className="min-w-0">
-            <h2 className="truncate font-black">{person.name}</h2>
+            <h2 className="truncate font-black hover:text-blue-700">{person.name}</h2>
             <p className="text-sm text-blue-700">{person.handle}</p>
             <p className="mt-1 text-sm text-slate-500">{person.role}</p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -29,7 +32,7 @@ function PersonCard({ person, onToggle }: { person: SocialPerson; onToggle: (per
               </span>
             </div>
           </div>
-        </div>
+        </Link>
 
         <button
           type="button"
@@ -71,7 +74,9 @@ export default function FollowersPage() {
           <Users className="h-8 w-8 text-blue-700" />
           <div>
             <h1 className="text-3xl font-black">Followers and Suggested People</h1>
-            <p className="mt-2 text-sm text-slate-600">See who follows you and discover mentors, contributors, and student helpers.</p>
+            <p className="mt-2 text-sm text-slate-600">
+              Click a person to view their public profile, or follow/unfollow directly.
+            </p>
           </div>
         </div>
       </section>
