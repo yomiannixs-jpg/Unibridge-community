@@ -65,11 +65,10 @@ function App() {
           <Route path="/followers" component={FollowersPage} />
           <Route path="/following" component={FollowingPage} />
           <Route path="/mentions" component={MentionsPage} />
-          <Route path="/rooms" component={RoomsPage} />
+          <Route path="/rooms/manage" component={RoomsManagePage} />
           <Route path="/rooms/:slug" component={RoomsPage} />
           <Route path="/rooms" component={RoomsPage} />
           <Route path="/presence" component={PresencePage} />
-          <Route path="/rooms/manage" component={RoomsManagePage} />
           <Route component={NotFound} />
         </Switch>
       </Layout>
