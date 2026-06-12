@@ -26,6 +26,7 @@ import MentionsPage from "@/pages/mentions";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth";
 import Profile from "@/pages/profile";
+import RoomsPage from "@/pages/rooms";
 
 function App() {
   return (
@@ -62,6 +63,7 @@ function App() {
           <Route path="/followers" component={FollowersPage} />
           <Route path="/following" component={FollowingPage} />
           <Route path="/mentions" component={MentionsPage} />
+          <Route path="/rooms" component={RoomsPage} />
           <Route component={NotFound} />
         </Switch>
       </Layout>
