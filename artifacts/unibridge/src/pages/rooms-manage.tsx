@@ -66,7 +66,7 @@ export default function RoomsManagePage() {
             <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-700">Room Management</p>
             <h1 className="mt-3 text-3xl font-black">Manage community chat rooms</h1>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              Create rooms, edit room information, reset room conversations, and keep CollegeDiscourse discussions organized.
+              Create, edit, reset, and organize CollegeDiscourse chat rooms.
             </p>
           </div>
           <Link href="/rooms" className="rounded-full bg-blue-800 px-5 py-3 text-sm font-bold text-white hover:bg-blue-900">
@@ -155,49 +155,41 @@ export default function RoomsManagePage() {
           </div>
         </form>
 
-        <div className="space-y-3">
+        <div className="grid min-w-0 gap-4 md:grid-cols-2">
           {rooms.map((room) => (
-            <article key={room.id} className="rounded-3xl border bg-white p-5 shadow-sm">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-800 text-xl text-white">{room.icon}</div>
-                    <div>
-                      <h2 className="text-xl font-black">{room.name}</h2>
-                      <p className="text-sm text-slate-500">/rooms/{room.slug} · {room.category}</p>
-                    </div>
-                  </div>
+            <article key={room.id} className="min-w-0 rounded-3xl border bg-white p-5 shadow-sm">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-800 text-xl text-white">
+                  {room.icon}
+                </div>
 
-                  <p className="mt-3 text-sm leading-6 text-slate-600">{room.description}</p>
+                <div className="min-w-0 flex-1">
+                  <h2 className="truncate text-lg font-black">{room.name}</h2>
+                  <p className="truncate text-sm text-slate-500">/rooms/{room.slug} · {room.category}</p>
+                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">{room.description}</p>
 
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
-                    <span className="rounded-full bg-slate-100 px-3 py-1">{room.members} members</span>
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">{room.members} members</span>
                     <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-800">{room.online} online</span>
                     <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-800">{room.messages.length} messages</span>
                   </div>
-                </div>
 
-                <div className="flex shrink-0 flex-wrap gap-2">
-                  <Link href={`/rooms/${room.slug}`} className="rounded-full border px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100">
-                    Open
-                  </Link>
-                  <button onClick={() => startEdit(room)} className="rounded-full border px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100">
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => setRooms(clearRoomMessages(room.id))}
-                    className="inline-flex items-center gap-1 rounded-full border px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    Reset
-                  </button>
-                  <button
-                    onClick={() => setRooms(deleteChatRoom(room.id))}
-                    className="inline-flex items-center gap-1 rounded-full border border-red-200 px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Delete
-                  </button>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Link href={`/rooms/${room.slug}`} className="rounded-full border px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100">
+                      Open
+                    </Link>
+                    <button onClick={() => startEdit(room)} className="rounded-full border px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100">
+                      Edit
+                    </button>
+                    <button onClick={() => setRooms(clearRoomMessages(room.id))} className="inline-flex items-center gap-1 rounded-full border px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100">
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      Reset
+                    </button>
+                    <button onClick={() => setRooms(deleteChatRoom(room.id))} className="inline-flex items-center gap-1 rounded-full border border-red-200 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50">
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             </article>
