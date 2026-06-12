@@ -15,6 +15,7 @@ import ModerationReports from "@/pages/moderation-reports";
 import ModerationModerators from "@/pages/moderation-moderators";
 import ModerationSafety from "@/pages/moderation-safety";
 import ModerationAuto from "@/pages/moderation-auto";
+import ModerationAnalytics from "@/pages/moderation-analytics";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth";
 import Profile from "@/pages/profile";
@@ -43,6 +44,7 @@ function App() {
           <Route path="/moderation/moderators" component={ModerationModerators} />
           <Route path="/moderation/safety" component={ModerationSafety} />
           <Route path="/moderation/auto" component={ModerationAuto} />
+          <Route path="/moderation/analytics" component={ModerationAnalytics} />
           <Route path="/auth" component={AuthPage} />
           <Route path="/login" component={AuthPage} />
           <Route path="/profile" component={Profile} />
