@@ -17,6 +17,7 @@ import ModerationModerators from "@/pages/moderation-moderators";
 import ModerationSafety from "@/pages/moderation-safety";
 import ModerationAuto from "@/pages/moderation-auto";
 import ModerationAnalytics from "@/pages/moderation-analytics";
+import ReputationPage from "@/pages/reputation";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth";
 import Profile from "@/pages/profile";
@@ -50,6 +51,7 @@ function App() {
           <Route path="/auth" component={AuthPage} />
           <Route path="/login" component={AuthPage} />
           <Route path="/profile" component={Profile} />
+          <Route path="/reputation" component={ReputationPage} />
           <Route component={NotFound} />
         </Switch>
       </Layout>
