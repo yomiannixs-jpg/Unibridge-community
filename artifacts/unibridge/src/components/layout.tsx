@@ -1,9 +1,9 @@
 import { Link, useLocation } from "wouter";
-import { Bookmark, Compass, Home, LogIn, MessageSquare, Plus, Search, ShieldCheck, UserCircle, Users, Radio } from "lucide-react";
+import { Bookmark, Compass, Home, LogIn, MessageSquare, Plus, Search, ShieldCheck, UserCircle, Users, Radio, Settings } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { NotificationBell } from "@/components/notification-bell";
 import { History } from "lucide-react";
-import { Users, UserPlus } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { AtSign } from "lucide-react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -25,9 +25,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/activity",label: "Activity",icon: History,},
     { href: "/followers", label: "Followers", icon: Users,},
     { href: "/following", label: "Following", icon: UserPlus,},
-    { href: "/mentions",  label: "Mentions", icon: AtSign,},
-    { href: "/presence", label: "Presence", icon: Radio}
-    { href: "/rooms/manage", label: "Manage Rooms",  icon: Settings}
+    { href: "/mentions", label: "Mentions", icon: AtSign },
+    { href: "/presence", label: "Presence", icon: Radio },
+    { href: "/rooms/manage", label: "Manage Rooms", icon: Settings },
   ];
 
   return (
