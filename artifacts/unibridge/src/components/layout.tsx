@@ -27,6 +27,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/following", label: "Following", icon: UserPlus,},
     { href: "/mentions",  label: "Mentions", icon: AtSign,},
     { href: "/presence", label: "Presence", icon: Radio}
+    { href: "/rooms/manage", label: "Manage Rooms",  icon: Settings}
   ];
 
   return (
