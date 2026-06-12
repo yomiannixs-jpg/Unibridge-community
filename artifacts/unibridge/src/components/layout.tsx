@@ -18,6 +18,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/search", label: "Search", icon: Search },
     { href: "/resources", label: "Resources", icon: Bookmark },
     { href: "/moderation", label: "Moderation", icon: ShieldCheck },
+    { href: "/privacy", label: "Privacy", icon: ShieldCheck },
     { href: "/profile", label: "Profile", icon: UserCircle },
     { href: "/activity",label: "Activity",icon: History,},
   ];
