@@ -1,88 +1,125 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "wouter";
-import { ArrowLeft, Save, ShieldCheck, UserCircle } from "lucide-react";
-import { roleLabel, useAuth } from "@/lib/auth-context";
+import { Link } from "wouter";
+import { Save, UserCircle } from "lucide-react";
+import {
+  loadUserProfile,
+  parseProfileLists,
+  profileStorageMode,
+  saveUserProfile,
+  toCommaList,
+  type UserProfile,
+} from "@/lib/user-profile-store";
 
 export default function AccountSettings() {
-  const [, setLocation] = useLocation();
-  const { user, isAuthenticated, signup, updateProfile, logout } = useAuth();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [bio, setBio] = useState("");
+  const [profile, setProfile] = useState<UserProfile>(() => loadUserProfile());
+  const [interests, setInterests] = useState("");
+  const [skills, setSkills] = useState("");
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      setName(user.name);
-      setEmail(user.email);
-      setBio(user.bio);
-    }
-  }, [user]);
+    const loaded = loadUserProfile();
+    setProfile(loaded);
+    setInterests(toCommaList(loaded.interests));
+    setSkills(toCommaList(loaded.skills));
+  }, []);
+
+  const update = (key: keyof UserProfile, value: string) => {
+    setProfile((current) => ({ ...current, [key]: value }));
+    setSaved(false);
+  };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAuthenticated) {
-      signup({ name, email, bio });
-      setLocation("/profile");
-      return;
-    }
-    updateProfile({ name, bio });
+    const next = parseProfileLists(profile, interests, skills);
+    saveUserProfile(next);
+    setProfile(next);
     setSaved(true);
-    window.setTimeout(() => setSaved(false), 1800);
   };
 
   return (
     <div className="space-y-6">
       <section className="rounded-[2rem] border bg-white p-6 shadow-sm">
-        <Link href="/profile" className="inline-flex items-center gap-2 text-sm font-bold text-blue-700 hover:text-blue-900">
-          <ArrowLeft className="h-4 w-4" /> Back to profile
-        </Link>
-        <h1 className="mt-4 text-3xl font-black">Account Settings</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-          Manage your CollegeDiscourse identity, profile details, role badge, and account foundation.
-        </p>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-blue-700">Account Settings</p>
+            <h1 className="mt-2 text-3xl font-black">Edit your CollegeDiscourse profile</h1>
+            <p className="mt-2 text-sm text-slate-600">
+              Profile fields are ready for database persistence and currently save safely in local storage.
+            </p>
+          </div>
+          <span className="rounded-full bg-blue-50 px-4 py-2 text-sm font-bold text-blue-800">{profileStorageMode()}</span>
+        </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <form onSubmit={submit} className="rounded-[2rem] border bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-black">Profile details</h2>
-          <div className="mt-5 space-y-4">
-            <div>
-              <label className="text-sm font-bold text-slate-700">Full name</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} required className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 text-sm outline-none focus:border-blue-400" />
-            </div>
-            <div>
-              <label className="text-sm font-bold text-slate-700">Email</label>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} required type="email" disabled={isAuthenticated} className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 text-sm outline-none focus:border-blue-400 disabled:opacity-70" />
-            </div>
-            <div>
-              <label className="text-sm font-bold text-slate-700">Bio</label>
-              <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={5} className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 text-sm outline-none focus:border-blue-400" />
-            </div>
-            <button className="inline-flex items-center gap-2 rounded-full bg-blue-800 px-5 py-3 text-sm font-bold text-white hover:bg-blue-900">
-              <Save className="h-4 w-4" /> {isAuthenticated ? "Save changes" : "Create account"}
-            </button>
-            {saved ? <span className="ml-3 text-sm font-bold text-emerald-700">Saved</span> : null}
+      <form onSubmit={submit} className="grid gap-4 lg:grid-cols-[1fr_320px]">
+        <section className="space-y-4 rounded-[2rem] border bg-white p-6 shadow-sm">
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="text-sm font-bold text-slate-700">
+              Display name
+              <input value={profile.displayName} onChange={(e) => update("displayName", e.target.value)} className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 outline-none focus:border-blue-400" />
+            </label>
+            <label className="text-sm font-bold text-slate-700">
+              Email
+              <input value={profile.email} onChange={(e) => update("email", e.target.value)} className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 outline-none focus:border-blue-400" />
+            </label>
+            <label className="text-sm font-bold text-slate-700">
+              Country
+              <input value={profile.country} onChange={(e) => update("country", e.target.value)} className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 outline-none focus:border-blue-400" />
+            </label>
+            <label className="text-sm font-bold text-slate-700">
+              Institution
+              <input value={profile.institution} onChange={(e) => update("institution", e.target.value)} className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 outline-none focus:border-blue-400" />
+            </label>
+            <label className="text-sm font-bold text-slate-700">
+              Degree level
+              <input value={profile.degreeLevel} onChange={(e) => update("degreeLevel", e.target.value)} className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 outline-none focus:border-blue-400" />
+            </label>
+            <label className="text-sm font-bold text-slate-700">
+              Field of study
+              <input value={profile.fieldOfStudy} onChange={(e) => update("fieldOfStudy", e.target.value)} className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 outline-none focus:border-blue-400" />
+            </label>
           </div>
-        </form>
 
-        <aside className="space-y-4">
-          <div className="rounded-[2rem] border bg-white p-6 shadow-sm">
-            <UserCircle className="h-9 w-9 text-blue-700" />
-            <h3 className="mt-3 font-black">Account status</h3>
-            <p className="mt-2 text-sm text-slate-600">{isAuthenticated ? "Signed in locally" : "Create a local-first account"}</p>
+          <label className="block text-sm font-bold text-slate-700">
+            Bio
+            <textarea value={profile.bio} onChange={(e) => update("bio", e.target.value)} rows={4} className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 outline-none focus:border-blue-400" />
+          </label>
+
+          <label className="block text-sm font-bold text-slate-700">
+            Interests, comma separated
+            <input value={interests} onChange={(e) => { setInterests(e.target.value); setSaved(false); }} className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 outline-none focus:border-blue-400" />
+          </label>
+
+          <label className="block text-sm font-bold text-slate-700">
+            Skills, comma separated
+            <input value={skills} onChange={(e) => { setSkills(e.target.value); setSaved(false); }} className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 outline-none focus:border-blue-400" />
+          </label>
+
+          <label className="block text-sm font-bold text-slate-700">
+            Academic goals
+            <textarea value={profile.goals} onChange={(e) => update("goals", e.target.value)} rows={4} className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 outline-none focus:border-blue-400" />
+          </label>
+
+          <button className="inline-flex items-center gap-2 rounded-full bg-blue-800 px-5 py-3 text-sm font-bold text-white hover:bg-blue-900">
+            <Save className="h-4 w-4" /> Save profile
+          </button>
+          {saved && <span className="ml-3 text-sm font-bold text-emerald-700">Saved successfully.</span>}
+        </section>
+
+        <aside className="rounded-[2rem] border bg-white p-6 shadow-sm">
+          <UserCircle className="h-12 w-12 text-blue-700" />
+          <h2 className="mt-3 text-2xl font-black">Public preview</h2>
+          <p className="mt-1 text-sm text-slate-500">{profile.role} · {profile.reputation} reputation</p>
+          <div className="mt-4 space-y-3 text-sm text-slate-700">
+            <p><b>Name:</b> {profile.displayName}</p>
+            <p><b>Country:</b> {profile.country}</p>
+            <p><b>Institution:</b> {profile.institution}</p>
+            <p><b>Degree:</b> {profile.degreeLevel}</p>
+            <p><b>Field:</b> {profile.fieldOfStudy}</p>
           </div>
-          {user ? (
-            <div className="rounded-[2rem] border bg-white p-6 shadow-sm">
-              <ShieldCheck className="h-9 w-9 text-blue-700" />
-              <h3 className="mt-3 font-black">Role badge</h3>
-              <p className="mt-2 rounded-full bg-blue-50 px-3 py-2 text-sm font-bold text-blue-800">{roleLabel(user.role)}</p>
-              <p className="mt-3 text-sm text-slate-600">Reputation: <b>{user.reputation}</b></p>
-              <button onClick={logout} className="mt-4 rounded-full border px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100">Logout</button>
-            </div>
-          ) : null}
+          <Link href="/profile" className="mt-5 inline-flex rounded-full border px-4 py-2 text-sm font-bold hover:bg-slate-100">View profile</Link>
         </aside>
-      </section>
+      </form>
     </div>
   );
 }
