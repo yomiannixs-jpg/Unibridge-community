@@ -38,13 +38,13 @@ function App() {
           <Route path="/saved" component={SavedPosts} />
           <Route path="/notifications" component={NotificationsPage} />
           <Route path="/search" component={SearchPage} />
-          <Route path="/moderation" component={Moderation} />
           <Route path="/moderation/users" component={ModerationUsers} />
           <Route path="/moderation/reports" component={ModerationReports} />
           <Route path="/moderation/moderators" component={ModerationModerators} />
           <Route path="/moderation/safety" component={ModerationSafety} />
           <Route path="/moderation/auto" component={ModerationAuto} />
           <Route path="/moderation/analytics" component={ModerationAnalytics} />
+          <Route path="/moderation" component={Moderation} />
           <Route path="/auth" component={AuthPage} />
           <Route path="/login" component={AuthPage} />
           <Route path="/profile" component={Profile} />
@@ -54,5 +54,4 @@ function App() {
     </WouterRouter>
   );
 }
-
 export default App;
