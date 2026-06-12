@@ -44,6 +44,7 @@ export default function RoomsManagePage() {
     setCategory(room.category);
     setDescription(room.description);
     setIcon(room.icon);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const submit = (e: React.FormEvent) => {
@@ -59,7 +60,7 @@ export default function RoomsManagePage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-hidden">
       <section className="rounded-[2rem] border bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
@@ -75,8 +76,8 @@ export default function RoomsManagePage() {
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)]">
-        <form onSubmit={submit} className="rounded-3xl border bg-white p-5 shadow-sm">
+      <section className="grid min-w-0 gap-5 2xl:grid-cols-[420px_minmax(0,1fr)]">
+        <form onSubmit={submit} className="min-w-0 rounded-3xl border bg-white p-5 shadow-sm">
           <h2 className="flex items-center gap-2 text-xl font-black">
             {editingId ? <Edit3 className="h-5 w-5 text-blue-700" /> : <Plus className="h-5 w-5 text-blue-700" />}
             {editingId ? "Edit Room" : "Create Room"}
@@ -155,41 +156,43 @@ export default function RoomsManagePage() {
           </div>
         </form>
 
-        <div className="grid min-w-0 gap-4 md:grid-cols-2">
+        <div className="min-w-0 space-y-4">
           {rooms.map((room) => (
             <article key={room.id} className="min-w-0 rounded-3xl border bg-white p-5 shadow-sm">
-              <div className="flex min-w-0 items-start gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-800 text-xl text-white">
-                  {room.icon}
+              <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-800 text-xl text-white">
+                    {room.icon}
+                  </div>
+
+                  <div className="min-w-0">
+                    <h2 className="truncate text-lg font-black">{room.name}</h2>
+                    <p className="truncate text-sm text-slate-500">/rooms/{room.slug} · {room.category}</p>
+                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">{room.description}</p>
+
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">{room.members} members</span>
+                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-800">{room.online} online</span>
+                      <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-800">{room.messages.length} messages</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="min-w-0 flex-1">
-                  <h2 className="truncate text-lg font-black">{room.name}</h2>
-                  <p className="truncate text-sm text-slate-500">/rooms/{room.slug} · {room.category}</p>
-                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">{room.description}</p>
-
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">{room.members} members</span>
-                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-800">{room.online} online</span>
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-800">{room.messages.length} messages</span>
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Link href={`/rooms/${room.slug}`} className="rounded-full border px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100">
-                      Open
-                    </Link>
-                    <button onClick={() => startEdit(room)} className="rounded-full border px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100">
-                      Edit
-                    </button>
-                    <button onClick={() => setRooms(clearRoomMessages(room.id))} className="inline-flex items-center gap-1 rounded-full border px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100">
-                      <RefreshCw className="h-3.5 w-3.5" />
-                      Reset
-                    </button>
-                    <button onClick={() => setRooms(deleteChatRoom(room.id))} className="inline-flex items-center gap-1 rounded-full border border-red-200 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50">
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Delete
-                    </button>
-                  </div>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Link href={`/rooms/${room.slug}`} className="rounded-full border px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100">
+                    Open
+                  </Link>
+                  <button onClick={() => startEdit(room)} className="rounded-full border px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100">
+                    Edit
+                  </button>
+                  <button onClick={() => setRooms(clearRoomMessages(room.id))} className="inline-flex items-center gap-1 rounded-full border px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100">
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Reset
+                  </button>
+                  <button onClick={() => setRooms(deleteChatRoom(room.id))} className="inline-flex items-center gap-1 rounded-full border border-red-200 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50">
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete
+                  </button>
                 </div>
               </div>
             </article>

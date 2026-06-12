@@ -99,7 +99,7 @@ export default function RoomsPage() {
   const typingUsers = presenceUsers.filter((user) => user.typing && user.currentRoom === selectedRoom?.name);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-hidden">
       <section className="rounded-[2rem] border bg-white p-6 shadow-sm">
         <div className="flex items-center gap-3">
           <Hash className="h-8 w-8 text-blue-700" />
@@ -117,7 +117,7 @@ export default function RoomsPage() {
           <button
             key={item}
             onClick={() => setCategory(item)}
-            className={`rounded-full px-4 py-2 text-sm font-bold ${
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold ${
               category === item ? "bg-blue-800 text-white" : "border bg-white text-slate-700 hover:bg-slate-50"
             }`}
           >
@@ -126,20 +126,20 @@ export default function RoomsPage() {
         ))}
       </div>
 
-      <section className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)_260px]">
-        <aside className="space-y-3">
+      <section className="grid min-w-0 gap-5 xl:grid-cols-[330px_minmax(0,1fr)]">
+        <aside className="min-w-0 space-y-3">
           {filteredRooms.map((room) => (
             <RoomCard key={room.id} room={room} active={selectedRoom?.id === room.id} />
           ))}
         </aside>
 
-        <main className="rounded-3xl border bg-white shadow-sm">
+        <main className="min-w-0 rounded-3xl border bg-white shadow-sm">
           {selectedRoom ? (
             <>
               <header className="border-b p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-2xl font-black">
+                <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-start 2xl:justify-between">
+                  <div className="min-w-0">
+                    <h2 className="break-words text-2xl font-black">
                       {selectedRoom.icon} {selectedRoom.name}
                     </h2>
                     <p className="mt-1 text-sm text-slate-500">
@@ -152,9 +152,17 @@ export default function RoomsPage() {
                     ) : null}
                   </div>
 
-                  <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800">
-                    {selectedRoom.category}
-                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {(selectedRoom.onlineUsers ?? []).slice(0, 6).map((user) => {
+                      const presence = presenceUsers.find((p) => p.name === user);
+                      return (
+                        <span key={user} className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                          <PresenceDot status={presence?.status ?? "online"} />
+                          {user}
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
               </header>
 
@@ -171,21 +179,21 @@ export default function RoomsPage() {
                         </span>
                         <span className="text-xs text-slate-400">{roomTimeAgo(message.createdAt)}</span>
                       </div>
-                      <p className="mt-2 text-sm leading-6 text-slate-700">{message.body}</p>
+                      <p className="mt-2 break-words text-sm leading-6 text-slate-700">{message.body}</p>
                     </div>
                   );
                 })}
               </div>
 
               <form onSubmit={submit} className="border-t p-4">
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   <input
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     placeholder={`Message ${selectedRoom.name} room...`}
                     className="min-w-0 flex-1 rounded-2xl border bg-slate-50 px-4 py-3 text-sm outline-none focus:border-blue-400"
                   />
-                  <button className="inline-flex items-center gap-2 rounded-2xl bg-blue-800 px-5 py-3 text-sm font-bold text-white hover:bg-blue-900">
+                  <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-800 px-5 py-3 text-sm font-bold text-white hover:bg-blue-900">
                     <Send className="h-4 w-4" />
                     Send
                   </button>
@@ -196,25 +204,6 @@ export default function RoomsPage() {
             <div className="p-10 text-center text-slate-500">Select a room to begin.</div>
           )}
         </main>
-
-        <aside className="rounded-3xl border bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 font-black">
-            <Users className="h-5 w-5 text-blue-700" />
-            Online Now
-          </div>
-
-          <div className="mt-4 space-y-3">
-            {(selectedRoom?.onlineUsers ?? []).map((user) => {
-              const presence = presenceUsers.find((p) => p.name === user);
-              return (
-                <div key={user} className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
-                  <PresenceDot status={presence?.status ?? "online"} />
-                  <span className="text-sm font-bold text-slate-700">{user}</span>
-                </div>
-              );
-            })}
-          </div>
-        </aside>
       </section>
     </div>
   );
