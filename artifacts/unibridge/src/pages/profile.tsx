@@ -90,12 +90,12 @@ export default function Profile() {
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-800 text-2xl font-black text-white">
-              {currentUser.name.charAt(0).toUpperCase()}
+              {(currentUser.name ?? "Demo Student").charAt(0).toUpperCase()}
             </div>
 
             <div>
-              <h1 className="text-3xl font-black">{currentUser.name}</h1>
-              <p className="text-sm text-slate-500">{currentUser.email}</p>
+              <h1 className="text-3xl font-black">{currentUser.name ?? "Demo Student"}</h1>
+              <p className="text-sm text-slate-500">{currentUser.email ?? "demo@collegediscourse.app"}</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800">
                   {currentUser.role}
