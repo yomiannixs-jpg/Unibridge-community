@@ -1,52 +1,116 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { LogIn, UserPlus } from "lucide-react";
+import { GraduationCap, LogIn, ShieldCheck, UserPlus } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 export default function AuthPage() {
   const [, setLocation] = useLocation();
-  const { login, signup } = useAuth();
+  const { login, signup, authMode } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("demo@collegediscourse.app");
+  const [password, setPassword] = useState("demo12345");
+  const [username, setUsername] = useState("demo_student");
+  const [displayName, setDisplayName] = useState("Demo Student");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (mode === "signup") signup({ name, email });
-    else login(email, name);
-    setLocation("/profile");
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      if (mode === "login") {
+        await login(email, password);
+      } else {
+        await signup({ email, password, username, displayName });
+      }
+      setLocation("/profile");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Authentication failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="mx-auto max-w-xl">
-      <div className="rounded-[2rem] border bg-white p-8 shadow-sm">
-        <p className="text-sm font-bold uppercase tracking-[0.25em] text-blue-700">CollegeDiscourse Account</p>
-        <h1 className="mt-2 text-3xl font-black">{mode === "login" ? "Welcome back" : "Create your account"}</h1>
-        <p className="mt-3 text-sm leading-6 text-slate-600">Join SubDiscourses, save posts, build reputation, and manage your student profile.</p>
-
-        <div className="my-6 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
-          <button onClick={() => setMode("login")} className={`rounded-xl px-4 py-2 text-sm font-bold ${mode === "login" ? "bg-white text-blue-800 shadow-sm" : "text-slate-600"}`}>Login</button>
-          <button onClick={() => setMode("signup")} className={`rounded-xl px-4 py-2 text-sm font-bold ${mode === "signup" ? "bg-white text-blue-800 shadow-sm" : "text-slate-600"}`}>Sign up</button>
+    <div className="mx-auto max-w-5xl">
+      <div className="grid overflow-hidden rounded-[2rem] border bg-white shadow-sm md:grid-cols-[1fr_1.1fr]">
+        <div className="bg-gradient-to-br from-blue-950 via-slate-900 to-red-800 p-8 text-white md:p-10">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20">
+            <GraduationCap className="h-7 w-7" />
+          </div>
+          <h1 className="mt-8 text-3xl font-black tracking-tight md:text-4xl">
+            Join CollegeDiscourse
+          </h1>
+          <p className="mt-4 leading-7 text-slate-200">
+            Create a profile, join SubDiscourses, save useful discussions, and take part in academic communities built for students, mentors, and researchers.
+          </p>
+          <div className="mt-8 rounded-3xl bg-white/10 p-5 text-sm ring-1 ring-white/20">
+            <div className="flex items-center gap-2 font-black">
+              <ShieldCheck className="h-4 w-4" /> Authentication mode
+            </div>
+            <p className="mt-2 text-slate-200">
+              {authMode === "supabase"
+                ? "Supabase is configured. Email/password auth will use your Supabase project."
+                : "Local demo mode is active. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel to enable Supabase auth."}
+            </p>
+            <p className="mt-3 text-slate-200"><b>Demo login:</b> demo@collegediscourse.app</p>
+          </div>
         </div>
 
-        <form onSubmit={submit} className="space-y-4">
-          {mode === "signup" ? (
-            <div>
-              <label className="text-sm font-bold text-slate-700">Full name</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} required className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 text-sm outline-none focus:border-blue-400" />
-            </div>
-          ) : null}
-          <div>
-            <label className="text-sm font-bold text-slate-700">Email</label>
-            <input value={email} onChange={(e) => setEmail(e.target.value)} required type="email" className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 text-sm outline-none focus:border-blue-400" />
+        <form onSubmit={submit} className="p-6 md:p-10">
+          <div className="flex rounded-2xl bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => setMode("login")}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black ${mode === "login" ? "bg-white text-blue-800 shadow-sm" : "text-slate-500"}`}
+            >
+              <LogIn className="h-4 w-4" /> Login
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("signup")}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black ${mode === "signup" ? "bg-white text-blue-800 shadow-sm" : "text-slate-500"}`}
+            >
+              <UserPlus className="h-4 w-4" /> Sign up
+            </button>
           </div>
-          <button className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-800 px-5 py-3 text-sm font-bold text-white hover:bg-blue-900">
-            {mode === "login" ? <LogIn className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
-            {mode === "login" ? "Login" : "Create account"}
-          </button>
-        </form>
 
-        <p className="mt-5 text-center text-sm text-slate-500">Prefer to explore first? <Link href="/" className="font-bold text-blue-700">Return home</Link></p>
+          <div className="mt-8 space-y-4">
+            {mode === "signup" && (
+              <>
+                <label className="block">
+                  <span className="text-sm font-bold text-slate-700">Display name</span>
+                  <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 outline-none focus:border-blue-300" />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-bold text-slate-700">Username</span>
+                  <input value={username} onChange={(e) => setUsername(e.target.value)} className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 outline-none focus:border-blue-300" />
+                </label>
+              </>
+            )}
+
+            <label className="block">
+              <span className="text-sm font-bold text-slate-700">Email</span>
+              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 outline-none focus:border-blue-300" />
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-bold text-slate-700">Password</span>
+              <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-2 w-full rounded-2xl border bg-slate-50 px-4 py-3 outline-none focus:border-blue-300" />
+            </label>
+          </div>
+
+          {error && <div className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{error}</div>}
+
+          <button disabled={loading} className="mt-6 w-full rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60">
+            {loading ? "Please wait..." : mode === "login" ? "Login to CollegeDiscourse" : "Create account"}
+          </button>
+
+          <p className="mt-5 text-center text-sm text-slate-500">
+            Continue browsing without an account from the <Link href="/" className="font-bold text-blue-700">home feed</Link>.
+          </p>
+        </form>
       </div>
     </div>
   );
