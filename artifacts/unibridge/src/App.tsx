@@ -28,6 +28,7 @@ import AuthPage from "@/pages/auth";
 import Profile from "@/pages/profile";
 import RoomsPage from "@/pages/rooms";
 import PresencePage from "@/pages/presence";
+import RoomsManagePage from "@/pages/rooms-manage";
 
 function App() {
   return (
@@ -68,6 +69,7 @@ function App() {
           <Route path="/rooms/:slug" component={RoomsPage} />
           <Route path="/rooms" component={RoomsPage} />
           <Route path="/presence" component={PresencePage} />
+          <Route path="/rooms/manage" component={RoomsManagePage} />
           <Route component={NotFound} />
         </Switch>
       </Layout>
