@@ -20,6 +20,8 @@ import ModerationAnalytics from "@/pages/moderation-analytics";
 import ReputationPage from "@/pages/reputation";
 import ActivityPage from "@/pages/activity";
 import PrivacySettingsPage from "@/pages/privacy";
+import FollowersPage from "@/pages/followers";
+import FollowingPage from "@/pages/following";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth";
 import Profile from "@/pages/profile";
@@ -56,6 +58,8 @@ function App() {
           <Route path="/reputation" component={ReputationPage} />
           <Route path="/activity" component={ActivityPage} />
           <Route path="/privacy" component={PrivacySettingsPage} />
+          <Route path="/followers" component={FollowersPage} />
+          <Route path="/following" component={FollowingPage} />
           <Route component={NotFound} />
         </Switch>
       </Layout>
