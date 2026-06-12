@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Bookmark, Compass, Home, LogIn, MessageSquare, Plus, Search, ShieldCheck, UserCircle, Users } from "lucide-react";
+import { Bookmark, Compass, Home, LogIn, MessageSquare, Plus, Search, ShieldCheck, UserCircle, Users, Radio } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { NotificationBell } from "@/components/notification-bell";
 import { History } from "lucide-react";
