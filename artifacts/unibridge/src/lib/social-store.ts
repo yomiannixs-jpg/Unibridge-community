@@ -40,41 +40,8 @@ const defaultFollowing: SocialPerson[] = [
 ];
 
 const defaultActivities: SocialActivity[] = [
-  {
-    id: "a1",
-    type: "follow",
-    label: "Started following",
-    detail: "FinanceGuru",
-    createdAt: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
-  },
-  {
-    id: "a2",
-    type: "follower",
-    label: "New follower",
-    detail: "ResearchNerd started following you",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-  },
-  {
-    id: "a3",
-    type: "save",
-    label: "Saved post",
-    detail: "Professor email structure for PhD applicants",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 7).toISOString(),
-  },
-  {
-    id: "a4",
-    type: "reputation",
-    label: "Earned reputation",
-    detail: "+10 for a helpful answer in d/research-help",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 25).toISOString(),
-  },
-  {
-    id: "a5",
-    type: "join",
-    label: "Joined SubDiscourse",
-    detail: "d/scholarships",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
-  },
+  { id: "a1", type: "follow", label: "Started following", detail: "FinanceGuru", createdAt: new Date(Date.now() - 1000 * 60 * 20).toISOString() },
+  { id: "a2", type: "follower", label: "New follower", detail: "ResearchNerd started following you", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString() },
 ];
 
 const defaultStore: SocialStore = {
@@ -85,25 +52,32 @@ const defaultStore: SocialStore = {
   commentsCount: 92,
 };
 
+function normalize(store: SocialStore): SocialStore {
+  const followingIds = new Set(store.following.map((p) => p.id));
+  return {
+    ...store,
+    followers: store.followers.map((p) => ({ ...p, followed: followingIds.has(p.id) || !!p.followed })),
+    following: store.following.map((p) => ({ ...p, followed: true })),
+  };
+}
+
 export function loadSocialStore(): SocialStore {
   if (typeof window === "undefined") return defaultStore;
-
   const raw = window.localStorage.getItem(SOCIAL_KEY);
-
   if (!raw) {
-    window.localStorage.setItem(SOCIAL_KEY, JSON.stringify(defaultStore));
-    return defaultStore;
+    const initial = normalize(defaultStore);
+    window.localStorage.setItem(SOCIAL_KEY, JSON.stringify(initial));
+    return initial;
   }
-
   try {
     const parsed = JSON.parse(raw) as Partial<SocialStore>;
-    return {
+    return normalize({
       followers: parsed.followers?.length ? parsed.followers : defaultFollowers,
       following: parsed.following?.length ? parsed.following : defaultFollowing,
       activities: parsed.activities?.length ? parsed.activities : defaultActivities,
       postsCount: typeof parsed.postsCount === "number" ? parsed.postsCount : defaultStore.postsCount,
       commentsCount: typeof parsed.commentsCount === "number" ? parsed.commentsCount : defaultStore.commentsCount,
-    };
+    });
   } catch {
     return defaultStore;
   }
@@ -111,43 +85,37 @@ export function loadSocialStore(): SocialStore {
 
 export function saveSocialStore(store: SocialStore) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(SOCIAL_KEY, JSON.stringify(store));
+  window.localStorage.setItem(SOCIAL_KEY, JSON.stringify(normalize(store)));
   window.dispatchEvent(new Event("collegediscourse-social-updated"));
+}
+
+export function isFollowing(personId: string) {
+  return loadSocialStore().following.some((p) => p.id === personId);
 }
 
 export function toggleFollowPerson(person: SocialPerson) {
   const store = loadSocialStore();
   const alreadyFollowing = store.following.some((p) => p.id === person.id);
 
-  const next: SocialStore = alreadyFollowing
-    ? {
-        ...store,
-        following: store.following.filter((p) => p.id !== person.id),
-        activities: [
-          {
-            id: crypto.randomUUID?.() ?? String(Date.now()),
-            type: "follow",
-            label: "Unfollowed",
-            detail: person.name,
-            createdAt: new Date().toISOString(),
-          },
-          ...store.activities,
-        ],
-      }
-    : {
-        ...store,
-        following: [{ ...person, followed: true }, ...store.following],
-        activities: [
-          {
-            id: crypto.randomUUID?.() ?? String(Date.now()),
-            type: "follow",
-            label: "Started following",
-            detail: person.name,
-            createdAt: new Date().toISOString(),
-          },
-          ...store.activities,
-        ],
-      };
+  const nextFollowing = alreadyFollowing
+    ? store.following.filter((p) => p.id !== person.id)
+    : [{ ...person, followed: true }, ...store.following];
+
+  const next: SocialStore = normalize({
+    ...store,
+    followers: store.followers.map((p) => p.id === person.id ? { ...p, followed: !alreadyFollowing } : p),
+    following: nextFollowing,
+    activities: [
+      {
+        id: crypto.randomUUID?.() ?? String(Date.now()),
+        type: "follow",
+        label: alreadyFollowing ? "Unfollowed" : "Started following",
+        detail: person.name,
+        createdAt: new Date().toISOString(),
+      },
+      ...store.activities,
+    ],
+  });
 
   saveSocialStore(next);
   return next;
