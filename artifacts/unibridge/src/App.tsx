@@ -64,6 +64,8 @@ function App() {
           <Route path="/following" component={FollowingPage} />
           <Route path="/mentions" component={MentionsPage} />
           <Route path="/rooms" component={RoomsPage} />
+          <Route path="/rooms/:slug" component={RoomsPage} />
+          <Route path="/rooms" component={RoomsPage} />
           <Route component={NotFound} />
         </Switch>
       </Layout>

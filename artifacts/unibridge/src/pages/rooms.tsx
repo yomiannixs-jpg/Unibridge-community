@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useRoute } from "wouter";
 import { Hash, Send, Users } from "lucide-react";
 import { loadChatRooms, roomTimeAgo, sendRoomMessage, type ChatRoom } from "@/lib/chat-rooms-store";
 
@@ -26,16 +27,20 @@ function RoomCard({
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-800 text-xl text-white">
           {room.icon}
         </div>
+
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <h3 className="truncate font-black">{room.name}</h3>
             <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600">{room.category}</span>
           </div>
+
           <p className="mt-1 line-clamp-2 text-sm text-slate-600">{room.description}</p>
+
           <div className="mt-3 flex flex-wrap gap-3 text-xs font-bold text-slate-500">
             <span>{room.members} members</span>
             <span className="text-emerald-700">{room.online} online</span>
           </div>
+
           {lastMessage && (
             <p className="mt-2 truncate text-xs text-slate-500">
               {lastMessage.author}: {lastMessage.body}
@@ -48,8 +53,15 @@ function RoomCard({
 }
 
 export default function RoomsPage() {
+  const [, params] = useRoute("/rooms/:slug");
+  const routeSlug = params?.slug;
+
   const [rooms, setRooms] = useState<ChatRoom[]>(() => loadChatRooms());
-  const [selectedId, setSelectedId] = useState(() => rooms[0]?.id ?? "");
+  const [selectedId, setSelectedId] = useState(() => {
+    const loaded = loadChatRooms();
+    const match = routeSlug ? loaded.find((room) => room.slug === routeSlug) : undefined;
+    return match?.id ?? loaded[0]?.id ?? "";
+  });
   const [category, setCategory] = useState<(typeof categories)[number]>("All");
   const [draft, setDraft] = useState("");
 
@@ -59,14 +71,23 @@ export default function RoomsPage() {
     return () => window.removeEventListener("collegediscourse-rooms-updated", sync);
   }, []);
 
+  useEffect(() => {
+    if (!routeSlug) return;
+    const match = rooms.find((room) => room.slug === routeSlug);
+    if (match) {
+      setSelectedId(match.id);
+      setCategory("All");
+    }
+  }, [routeSlug, rooms]);
+
   const filteredRooms = useMemo(() => {
     return category === "All" ? rooms : rooms.filter((room) => room.category === category);
   }, [rooms, category]);
 
-  const selectedRoom = useMemo(
-    () => rooms.find((room) => room.id === selectedId) ?? filteredRooms[0] ?? rooms[0],
-    [rooms, filteredRooms, selectedId],
-  );
+  const selectedRoom = useMemo(() => {
+    const routeMatch = routeSlug ? rooms.find((room) => room.slug === routeSlug) : undefined;
+    return routeMatch ?? rooms.find((room) => room.id === selectedId) ?? filteredRooms[0] ?? rooms[0];
+  }, [rooms, filteredRooms, selectedId, routeSlug]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,6 +145,7 @@ export default function RoomsPage() {
                       {selectedRoom.members} members · {selectedRoom.online} online · {selectedRoom.messages.length} messages
                     </p>
                   </div>
+
                   <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800">
                     {selectedRoom.category}
                   </span>
