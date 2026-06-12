@@ -3,6 +3,7 @@ import { Bookmark, Compass, Home, LogIn, MessageSquare, Plus, Search, ShieldChec
 import { useAuth } from "@/lib/auth-context";
 import { NotificationBell } from "@/components/notification-bell";
 import { History } from "lucide-react";
+import { Users, UserPlus } from "lucide-react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -21,6 +22,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/privacy", label: "Privacy", icon: ShieldCheck },
     { href: "/profile", label: "Profile", icon: UserCircle },
     { href: "/activity",label: "Activity",icon: History,},
+    {href: "/followers", label: "Followers", icon: Users,},
+    { href: "/following", label: "Following", icon: UserPlus,},
   ];
 
   return (
