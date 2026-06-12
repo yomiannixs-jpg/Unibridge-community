@@ -1,14 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { Inbox, Send } from "lucide-react";
+import { Inbox, RefreshCw, Send } from "lucide-react";
 import {
   dmTimeAgo,
   loadDirectMessages,
   markThreadRead,
+  resetDirectMessages,
   sendDirectMessage,
   type MessageThread,
 } from "@/lib/direct-messages-store";
 import { loadPresenceUsers } from "@/lib/presence-store";
 import { PresenceBadge, PresenceDot } from "@/components/presence-badge";
+
+function initials(name: string) {
+  return (name || "U").charAt(0).toUpperCase();
+}
 
 function ThreadList({
   threads,
@@ -31,6 +36,8 @@ function ThreadList({
       <div className="space-y-2">
         {threads.map((thread) => {
           const presence = presenceUsers.find((u) => u.name === thread.participantName);
+          const lastMessage = thread.messages[thread.messages.length - 1];
+
           return (
             <button
               key={thread.id}
@@ -40,8 +47,8 @@ function ThreadList({
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-800 font-black text-white">
-                  {thread.participantAvatar}
+                <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-800 font-black text-white">
+                  {thread.participantAvatar || initials(thread.participantName)}
                   <span className="absolute -bottom-1 -right-1">
                     <PresenceDot status={presence?.status ?? "offline"} />
                   </span>
@@ -50,9 +57,12 @@ function ThreadList({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <b className="truncate text-sm">{thread.participantName}</b>
-                    <span className="text-xs text-slate-400">{dmTimeAgo(thread.lastMessageAt)}</span>
+                    <span className="shrink-0 text-xs text-slate-400">{dmTimeAgo(thread.lastMessageAt)}</span>
                   </div>
-                  <p className="truncate text-xs text-slate-500">{thread.participantRole}</p>
+                  <p className="truncate text-xs text-blue-700">{thread.participantHandle}</p>
+                  <p className="truncate text-xs text-slate-500">
+                    {lastMessage ? lastMessage.body : thread.participantRole}
+                  </p>
                   {presence?.typing ? <p className="text-xs font-bold text-emerald-700">typing...</p> : null}
                 </div>
 
@@ -70,7 +80,7 @@ function ThreadList({
 
 export default function Messages() {
   const [threads, setThreads] = useState<MessageThread[]>(() => loadDirectMessages());
-  const [selectedId, setSelectedId] = useState(() => threads[0]?.id ?? "");
+  const [selectedId, setSelectedId] = useState(() => loadDirectMessages()[0]?.id ?? "");
   const [draft, setDraft] = useState("");
 
   useEffect(() => {
@@ -101,13 +111,30 @@ export default function Messages() {
     setDraft("");
   };
 
+  const resetInbox = () => {
+    const next = resetDirectMessages();
+    setThreads(next);
+    setSelectedId(next[0]?.id ?? "");
+  };
+
   return (
     <div className="space-y-6">
       <section className="rounded-[2rem] border bg-white p-6 shadow-sm">
-        <h1 className="text-3xl font-black">Direct Messages</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          Continue private conversations with mentors, contributors, and student helpers.
-        </p>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-black">Direct Messages</h1>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Continue private conversations with mentors, contributors, and student helpers.
+            </p>
+          </div>
+          <button
+            onClick={resetInbox}
+            className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Reset demo inbox
+          </button>
+        </div>
       </section>
 
       <section className="grid gap-5 lg:grid-cols-[310px_minmax(0,1fr)]">
@@ -118,15 +145,15 @@ export default function Messages() {
             <>
               <header className="border-b p-5">
                 <div className="flex items-center gap-3">
-                  <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-800 font-black text-white">
-                    {selectedThread.participantAvatar}
+                  <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-800 font-black text-white">
+                    {selectedThread.participantAvatar || initials(selectedThread.participantName)}
                     <span className="absolute -bottom-1 -right-1">
                       <PresenceDot status={selectedPresence?.status ?? "offline"} />
                     </span>
                   </div>
 
-                  <div>
-                    <h2 className="text-xl font-black">{selectedThread.participantName}</h2>
+                  <div className="min-w-0">
+                    <h2 className="truncate text-xl font-black">{selectedThread.participantName}</h2>
                     <p className="text-sm text-slate-500">
                       {selectedThread.participantHandle} · {selectedThread.participantRole}
                     </p>
@@ -161,14 +188,14 @@ export default function Messages() {
               </div>
 
               <form onSubmit={submit} className="border-t p-4">
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   <input
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     placeholder={`Message ${selectedThread.participantName}...`}
                     className="min-w-0 flex-1 rounded-2xl border bg-slate-50 px-4 py-3 text-sm outline-none focus:border-blue-400"
                   />
-                  <button className="inline-flex items-center gap-2 rounded-2xl bg-blue-800 px-5 py-3 text-sm font-bold text-white hover:bg-blue-900">
+                  <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-800 px-5 py-3 text-sm font-bold text-white hover:bg-blue-900">
                     <Send className="h-4 w-4" />
                     Send
                   </button>
