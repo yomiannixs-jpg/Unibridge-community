@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Bookmark, Compass, Home, LogIn, MessageSquare, Plus, Search, ShieldCheck, UserCircle, Users } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { NotificationBell } from "@/components/notification-bell";
+import { History } from "lucide-react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -18,6 +19,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/resources", label: "Resources", icon: Bookmark },
     { href: "/moderation", label: "Moderation", icon: ShieldCheck },
     { href: "/profile", label: "Profile", icon: UserCircle },
+    { href: "/activity",label: "Activity",icon: History,},
   ];
 
   return (
