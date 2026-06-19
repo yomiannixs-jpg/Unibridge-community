@@ -103,6 +103,8 @@ function CommentTree({
               </button>
               <Badge badge={comment.badge} />
               <KarmaBadge karma={karma} />
+              <ContributorRibbon name={comment.author} /> 
+              <IdentityBadges name={comment.author} /> 
               <span className="rounded-full bg-slate-100 px-2 py-1">{comment.role}</span>
               <span className="rounded-full bg-emerald-50 px-2 py-1 font-black text-emerald-800">{karma} karma</span>
               <span>{comment.createdAt}</span>
