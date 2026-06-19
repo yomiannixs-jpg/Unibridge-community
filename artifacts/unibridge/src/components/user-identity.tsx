@@ -58,12 +58,12 @@ export function IdentityBadges({ name }: { name: string }) {
 
       <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-700">
         <Sparkles className="h-3 w-3" />
-        {identity.communityFlair}
+        Flair: {identity.communityFlair}
       </span>
 
       <span className="inline-flex items-center gap-1 rounded-full bg-yellow-50 px-2 py-1 text-[10px] font-black text-yellow-800">
         <Cake className="h-3 w-3" />
-        {identity.joined}
+        Cake Day: {identity.joined}
       </span>
     </>
   );
