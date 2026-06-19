@@ -27,7 +27,7 @@ export function VoteButtons({
 
   if (compact) {
     return (
-      <div className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1">
+      <div className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-1">
         <button
           type="button"
           onClick={() => applyVote(1)}
@@ -36,9 +36,11 @@ export function VoteButtons({
           }`}
           aria-label="Upvote"
         >
-          <ChevronUp className="h-4 w-4" />
+          <ChevronUp className="h-3.5 w-3.5" />
         </button>
-        <span className="min-w-[2rem] text-center text-xs font-black text-slate-800">{score}</span>
+
+        <span className="min-w-[1.75rem] text-center text-xs font-black text-slate-800">{score}</span>
+
         <button
           type="button"
           onClick={() => applyVote(-1)}
@@ -47,34 +49,36 @@ export function VoteButtons({
           }`}
           aria-label="Downvote"
         >
-          <ChevronDown className="h-4 w-4" />
+          <ChevronDown className="h-3.5 w-3.5" />
         </button>
       </div>
     );
   }
 
   return (
-    <div className="flex w-14 shrink-0 flex-col items-center rounded-2xl bg-slate-100 py-2">
+    <div className="flex w-12 shrink-0 flex-col items-center rounded-2xl bg-slate-100 py-2">
       <button
         type="button"
         onClick={() => applyVote(1)}
-        className={`rounded-xl p-1.5 transition ${
+        className={`rounded-xl p-1 transition ${
           vote.vote === 1 ? "bg-blue-800 text-white" : "text-slate-500 hover:bg-white hover:text-blue-800"
         }`}
         aria-label="Upvote"
       >
-        <ChevronUp className="h-5 w-5" />
+        <ChevronUp className="h-4 w-4" />
       </button>
+
       <span className="py-1 text-sm font-black text-slate-900">{score}</span>
+
       <button
         type="button"
         onClick={() => applyVote(-1)}
-        className={`rounded-xl p-1.5 transition ${
+        className={`rounded-xl p-1 transition ${
           vote.vote === -1 ? "bg-blue-800 text-white" : "text-slate-500 hover:bg-white hover:text-blue-800"
         }`}
         aria-label="Downvote"
       >
-        <ChevronDown className="h-5 w-5" />
+        <ChevronDown className="h-4 w-4" />
       </button>
     </div>
   );

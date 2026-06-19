@@ -4,6 +4,10 @@ import { useMemo, useState } from "react";
 import { VoteButtons } from "@/components/vote-buttons";
 import { getDemoPostBySlug, type DemoComment } from "@/lib/demo-posts-store";
 
+function userSlug(name: string) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
 export default function PostDetail() {
   const [, params] = useRoute("/posts/:id");
   const [location] = useLocation();
@@ -12,6 +16,9 @@ export default function PostDetail() {
   const post = getDemoPostBySlug(slug);
 
   const [draft, setDraft] = useState("");
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [savedComments, setSavedComments] = useState<string[]>([]);
+  const [reportedComments, setReportedComments] = useState<string[]>([]);
   const [extraComments, setExtraComments] = useState<DemoComment[]>([]);
 
   const comments = useMemo(() => {
@@ -42,13 +49,26 @@ export default function PostDetail() {
         id: `comment-local-${Date.now()}`,
         author: "You",
         role: "Member",
-        body,
+        body: replyingTo ? `@${replyingTo} ${body}` : body,
         createdAt: "just now",
         score: 1,
       },
     ]);
 
     setDraft("");
+    setReplyingTo(null);
+  };
+
+  const toggleSaved = (commentId: string) => {
+    setSavedComments((items) =>
+      items.includes(commentId) ? items.filter((id) => id !== commentId) : [...items, commentId],
+    );
+  };
+
+  const toggleReported = (commentId: string) => {
+    setReportedComments((items) =>
+      items.includes(commentId) ? items.filter((id) => id !== commentId) : [...items, commentId],
+    );
   };
 
   return (
@@ -62,7 +82,10 @@ export default function PostDetail() {
               <Link href={`/rooms/${post.room.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`} className="rounded-full bg-blue-50 px-2 py-1 text-blue-800">
                 {post.room}
               </Link>
-              <span>Posted by {post.author}</span>
+              <span>Posted by</span>
+              <Link href={`/u/${userSlug(post.author)}`} className="font-black text-blue-700 hover:underline">
+                {post.author}
+              </Link>
               <span>{post.createdAt}</span>
             </div>
 
@@ -78,7 +101,17 @@ export default function PostDetail() {
       </article>
 
       <form onSubmit={submit} className="rounded-3xl border bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-black">Add a comment</h2>
+        <h2 className="text-lg font-black">{replyingTo ? `Replying to ${replyingTo}` : "Add a comment"}</h2>
+        {replyingTo ? (
+          <button
+            type="button"
+            onClick={() => setReplyingTo(null)}
+            className="mt-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 hover:bg-slate-200"
+          >
+            Cancel reply
+          </button>
+        ) : null}
+
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <input
             value={draft}
@@ -96,29 +129,69 @@ export default function PostDetail() {
       <section className="space-y-3">
         <h2 className="text-xl font-black">Comments</h2>
 
-        {comments.map((comment) => (
-          <article key={comment.id} className="rounded-3xl border bg-white p-4 shadow-sm">
-            <div className="flex gap-4">
-              <VoteButtons itemId={comment.id} baseScore={comment.score} compact />
+        {comments.map((comment) => {
+          const saved = savedComments.includes(comment.id);
+          const reported = reportedComments.includes(comment.id);
 
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-500">
-                  <span className="font-black text-slate-900">{comment.author}</span>
-                  <span className="rounded-full bg-slate-100 px-2 py-1">{comment.role}</span>
-                  <span>{comment.createdAt}</span>
+          return (
+            <article key={comment.id} className="rounded-3xl border bg-white p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="pt-1">
+                  <VoteButtons itemId={comment.id} baseScore={comment.score} compact />
                 </div>
 
-                <p className="mt-2 text-sm leading-6 text-slate-700">{comment.body}</p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-500">
+                    {comment.author === "You" ? (
+                      <span className="font-black text-slate-900">You</span>
+                    ) : (
+                      <Link href={`/u/${userSlug(comment.author)}`} className="font-black text-blue-700 hover:underline">
+                        {comment.author}
+                      </Link>
+                    )}
+                    <span className="rounded-full bg-slate-100 px-2 py-1">{comment.role}</span>
+                    <span>{comment.createdAt}</span>
+                  </div>
 
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button className="rounded-full px-3 py-1 text-xs font-bold text-slate-500 hover:bg-slate-100">Reply</button>
-                  <button className="rounded-full px-3 py-1 text-xs font-bold text-slate-500 hover:bg-slate-100">Save</button>
-                  <button className="rounded-full px-3 py-1 text-xs font-bold text-slate-500 hover:bg-slate-100">Report</button>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">{comment.body}</p>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReplyingTo(comment.author);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="rounded-full px-3 py-1 text-xs font-bold text-slate-600 hover:bg-slate-100"
+                    >
+                      Reply
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleSaved(comment.id)}
+                      className={`rounded-full px-3 py-1 text-xs font-bold ${
+                        saved ? "bg-blue-50 text-blue-800" : "text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      {saved ? "Saved" : "Save"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleReported(comment.id)}
+                      className={`rounded-full px-3 py-1 text-xs font-bold ${
+                        reported ? "bg-red-50 text-red-700" : "text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      {reported ? "Reported" : "Report"}
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </section>
     </div>
   );
