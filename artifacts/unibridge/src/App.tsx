@@ -30,6 +30,7 @@ import RoomsPage from "@/pages/rooms";
 import PresencePage from "@/pages/presence";
 import RoomsManagePage from "@/pages/rooms-manage";
 import PublicProfilePage from "@/pages/public-profile";
+import LeaderboardPage from "@/pages/leaderboard";
 
 function App() {
   return (
@@ -71,6 +72,7 @@ function App() {
           <Route path="/rooms" component={RoomsPage} />
           <Route path="/presence" component={PresencePage} />
           <Route path="/u/:slug" component={PublicProfilePage} />
+          <Route path="/leaderboard" component={LeaderboardPage} />
           <Route component={NotFound} />
         </Switch>
       </Layout>

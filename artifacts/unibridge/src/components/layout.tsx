@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { NotificationBell } from "@/components/notification-bell";
+import { Crown } from "lucide-react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -29,6 +30,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/following", label: "Following", icon: UserPlus },
     { href: "/mentions", label: "Mentions", icon: AtSign },
     { href: "/presence", label: "Presence", icon: Radio },
+    { href: "/leaderboard", label: "Leaderboard", icon: Crown },
   ];
 
   return (
