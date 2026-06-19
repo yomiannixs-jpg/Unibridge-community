@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { VoteButtons } from "@/components/vote-buttons";
 import { getDemoPostBySlug, type DemoComment } from "@/lib/demo-posts-store";
 import { getUserKarma, MentionText, UserHoverCard } from "@/components/user-hover-card";
+import { UserActionMenu } from "@/components/user-action-menu";
+import { KarmaBadge } from "@/components/karma-badge";
 
 type ThreadedComment = DemoComment & {
   parentId?: string;
@@ -58,6 +60,7 @@ function CommentTree({
   onReply,
   onSave,
   onReport,
+  onMention,
   saved,
   reported,
   depth = 0,
@@ -68,12 +71,15 @@ function CommentTree({
   onReply: (comment: ThreadedComment) => void;
   onSave: (commentId: string) => void;
   onReport: (commentId: string) => void;
+  onMention: (username: string) => void;
   saved: boolean;
   reported: boolean;
   depth?: number;
 }) {
   const [expanded, setExpanded] = useState(true);
+  const [showActions, setShowActions] = useState(false);
   const childCount = childrenComments.length;
+  const karma = getUserKarma(comment.author);
 
   return (
     <article className={`${depth > 0 ? "border-l-2 border-blue-100 pl-4" : ""}`}>
@@ -92,14 +98,17 @@ function CommentTree({
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-500">
-              <UserHoverCard name={comment.author} />
+              <button type="button" onClick={() => setShowActions((value) => !value)} className="text-left">
+                <UserHoverCard name={comment.author} />
+              </button>
               <Badge badge={comment.badge} />
+              <KarmaBadge karma={karma} />
               <span className="rounded-full bg-slate-100 px-2 py-1">{comment.role}</span>
-              <span className="rounded-full bg-emerald-50 px-2 py-1 font-black text-emerald-800">
-                {getUserKarma(comment.author)} karma
-              </span>
+              <span className="rounded-full bg-emerald-50 px-2 py-1 font-black text-emerald-800">{karma} karma</span>
               <span>{comment.createdAt}</span>
             </div>
+
+            {showActions ? <UserActionMenu name={comment.author} onMention={onMention} /> : null}
 
             <Awards awards={comment.awards} />
 
@@ -108,40 +117,20 @@ function CommentTree({
             </p>
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onReply(comment)}
-                className="rounded-full px-3 py-1 text-xs font-bold text-slate-600 hover:bg-slate-100"
-              >
+              <button type="button" onClick={() => onReply(comment)} className="rounded-full px-3 py-1 text-xs font-bold text-slate-600 hover:bg-slate-100">
                 Reply
               </button>
 
-              <button
-                type="button"
-                onClick={() => onSave(comment.id)}
-                className={`rounded-full px-3 py-1 text-xs font-bold ${
-                  saved ? "bg-blue-50 text-blue-800" : "text-slate-600 hover:bg-slate-100"
-                }`}
-              >
+              <button type="button" onClick={() => onSave(comment.id)} className={`rounded-full px-3 py-1 text-xs font-bold ${saved ? "bg-blue-50 text-blue-800" : "text-slate-600 hover:bg-slate-100"}`}>
                 {saved ? "Saved" : "Save"}
               </button>
 
-              <button
-                type="button"
-                onClick={() => onReport(comment.id)}
-                className={`rounded-full px-3 py-1 text-xs font-bold ${
-                  reported ? "bg-red-50 text-red-700" : "text-slate-600 hover:bg-slate-100"
-                }`}
-              >
+              <button type="button" onClick={() => onReport(comment.id)} className={`rounded-full px-3 py-1 text-xs font-bold ${reported ? "bg-red-50 text-red-700" : "text-slate-600 hover:bg-slate-100"}`}>
                 {reported ? "Reported" : "Report"}
               </button>
 
               {childCount ? (
-                <button
-                  type="button"
-                  onClick={() => setExpanded((value) => !value)}
-                  className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black text-blue-800 hover:bg-blue-50"
-                >
+                <button type="button" onClick={() => setExpanded((value) => !value)} className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black text-blue-800 hover:bg-blue-50">
                   {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                   {expanded ? "Hide" : "Show"} {childCount} {childCount === 1 ? "reply" : "replies"}
                 </button>
@@ -283,6 +272,14 @@ export default function PostDetail() {
     );
   }
 
+  const mentionUser = (username: string) => {
+    setDraft((value) => {
+      const mention = `@${username} `;
+      return value.includes(mention) ? value : `${mention}${value}`;
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     const body = draft.trim();
@@ -331,6 +328,7 @@ export default function PostDetail() {
           setDraft(`@${item.author} `);
           window.scrollTo({ top: 0, behavior: "smooth" });
         }}
+        onMention={mentionUser}
         onSave={toggleSaved}
         onReport={toggleReported}
         saved={savedComments.includes(child.id)}
@@ -351,6 +349,7 @@ export default function PostDetail() {
               </Link>
               <span>Posted by</span>
               <UserHoverCard name={post.author} />
+              <KarmaBadge karma={getUserKarma(post.author)} />
               <span className="rounded-full bg-emerald-50 px-2 py-1 font-black text-emerald-800">
                 {getUserKarma(post.author)} karma
               </span>
@@ -430,6 +429,7 @@ export default function PostDetail() {
               setDraft(`@${item.author} `);
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
+            onMention={mentionUser}
             onSave={toggleSaved}
             onReport={toggleReported}
             saved={savedComments.includes(comment.id)}
