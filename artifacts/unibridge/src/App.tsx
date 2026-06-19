@@ -42,7 +42,6 @@ function App() {
           <Route path="/communities" component={Community} />
           <Route path="/community" component={Community} />
           <Route path="/d/:slug" component={Community} />
-          <Route path="/posts/:id" component={PostDetail} />
           <Route path="/create" component={NewPost} />
           <Route path="/new-post" component={NewPost} />
           <Route path="/messages" component={Messages} />
@@ -73,6 +72,7 @@ function App() {
           <Route path="/presence" component={PresencePage} />
           <Route path="/u/:slug" component={PublicProfilePage} />
           <Route path="/leaderboard" component={LeaderboardPage} />
+          <Route path="/posts/:id" component={PostDetail} />
           <Route component={NotFound} />
         </Switch>
       </Layout>
