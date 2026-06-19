@@ -163,7 +163,9 @@ function CommentTree({
 export default function PostDetail() {
   const [, params] = useRoute("/posts/:id");
   const [location] = useLocation();
-  const fallbackSlug = location.split("/posts/")[1]?.split("?")[0]?.replace(/^\\//, "");
+  const fallbackSlug = location.startsWith("/posts/")
+  ? location.slice("/posts/".length).split("?")[0]
+  : undefined;
   const slug = params?.id ?? fallbackSlug;
   const post = getDemoPostBySlug(slug);
 
