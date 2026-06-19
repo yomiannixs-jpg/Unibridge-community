@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, MessageCircle, Pin, Send } from "lucide-reac
 import { useMemo, useState } from "react";
 import { VoteButtons } from "@/components/vote-buttons";
 import { getDemoPostBySlug, type DemoComment } from "@/lib/demo-posts-store";
+import { getUserKarma, MentionText, UserHoverCard } from "@/components/user-hover-card";
 
 type ThreadedComment = DemoComment & {
   parentId?: string;
@@ -12,10 +13,6 @@ type ThreadedComment = DemoComment & {
 };
 
 type SortMode = "Top" | "New" | "Old";
-
-function userSlug(name: string) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-}
 
 function parseAge(value: string) {
   if (value === "just now") return 0;
@@ -95,21 +92,20 @@ function CommentTree({
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-500">
-              {comment.author === "You" ? (
-                <span className="font-black text-slate-900">You</span>
-              ) : (
-                <Link href={`/u/${userSlug(comment.author)}`} className="font-black text-blue-700 hover:underline">
-                  {comment.author}
-                </Link>
-              )}
+              <UserHoverCard name={comment.author} />
               <Badge badge={comment.badge} />
               <span className="rounded-full bg-slate-100 px-2 py-1">{comment.role}</span>
+              <span className="rounded-full bg-emerald-50 px-2 py-1 font-black text-emerald-800">
+                {getUserKarma(comment.author)} karma
+              </span>
               <span>{comment.createdAt}</span>
             </div>
 
             <Awards awards={comment.awards} />
 
-            <p className="mt-2 text-sm leading-6 text-slate-700">{comment.body}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              <MentionText text={comment.body} />
+            </p>
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
@@ -163,9 +159,11 @@ function CommentTree({
 export default function PostDetail() {
   const [, params] = useRoute("/posts/:id");
   const [location] = useLocation();
+
   const fallbackSlug = location.startsWith("/posts/")
-  ? location.slice("/posts/".length).split("?")[0]
-  : undefined;
+    ? location.slice("/posts/".length).split("?")[0]
+    : undefined;
+
   const slug = params?.id ?? fallbackSlug;
   const post = getDemoPostBySlug(slug);
 
@@ -202,7 +200,7 @@ export default function PostDetail() {
               role: "Research Mentor",
               badge: "EXPERT",
               awards: ["⭐ x2"],
-              body: "This is useful. I would also add that the context should be narrow enough to find data.",
+              body: "@You this is useful. I would also add that the context should be narrow enough to find data.",
               createdAt: "35m ago",
               score: 18,
             },
@@ -222,7 +220,7 @@ export default function PostDetail() {
               author: "MethodMentor",
               role: "Methods Mentor",
               badge: "MOD",
-              body: "Yes. Start from a research idea, but quickly check whether the data can actually measure it.",
+              body: "@You yes. Start from a research idea, but quickly check whether the data can actually measure it.",
               createdAt: "15m ago",
               score: 11,
             },
@@ -330,6 +328,7 @@ export default function PostDetail() {
         depth={depth}
         onReply={(item) => {
           setReplyingTo(item);
+          setDraft(`@${item.author} `);
           window.scrollTo({ top: 0, behavior: "smooth" });
         }}
         onSave={toggleSaved}
@@ -351,9 +350,10 @@ export default function PostDetail() {
                 {post.room}
               </Link>
               <span>Posted by</span>
-              <Link href={`/u/${userSlug(post.author)}`} className="font-black text-blue-700 hover:underline">
-                {post.author}
-              </Link>
+              <UserHoverCard name={post.author} />
+              <span className="rounded-full bg-emerald-50 px-2 py-1 font-black text-emerald-800">
+                {getUserKarma(post.author)} karma
+              </span>
               <span>{post.createdAt}</span>
             </div>
 
@@ -376,7 +376,10 @@ export default function PostDetail() {
             <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800">Threaded reply</span>
             <button
               type="button"
-              onClick={() => setReplyingTo(null)}
+              onClick={() => {
+                setReplyingTo(null);
+                setDraft("");
+              }}
               className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 hover:bg-slate-200"
             >
               Cancel reply
@@ -388,7 +391,7 @@ export default function PostDetail() {
           <input
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            placeholder={replyingTo ? `Reply to ${replyingTo.author}...` : "Write a helpful reply..."}
+            placeholder={replyingTo ? `Reply to ${replyingTo.author}...` : "Write a helpful reply or @mention someone..."}
             className="min-w-0 flex-1 rounded-2xl border bg-slate-50 px-4 py-3 text-sm outline-none focus:border-blue-400"
           />
           <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-800 px-5 py-3 text-sm font-bold text-white hover:bg-blue-900">
@@ -424,6 +427,7 @@ export default function PostDetail() {
             renderChildren={renderChildren}
             onReply={(item) => {
               setReplyingTo(item);
+              setDraft(`@${item.author} `);
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
             onSave={toggleSaved}

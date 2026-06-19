@@ -5,6 +5,11 @@ import { isFollowing, toggleFollowPerson } from "@/lib/social-store";
 import { PresenceBadge, PresenceDot } from "@/components/presence-badge";
 import { useState } from "react";
 
+export function getUserKarma(name: string) {
+  const profile = getPublicProfile(slugifyUser(name));
+  return profile?.reputation ?? 240;
+}
+
 export function UserHoverCard({ name }: { name: string }) {
   const slug = slugifyUser(name);
   const profile = getPublicProfile(slug);
@@ -23,8 +28,9 @@ export function UserHoverCard({ name }: { name: string }) {
         {profile.name}
       </Link>
 
-      <div className="pointer-events-none absolute left-0 top-6 z-50 hidden w-80 rounded-3xl border bg-white p-4 text-left shadow-xl group-hover:block group-focus-within:block">
+      <div className="pointer-events-none absolute left-0 top-6 z-50 hidden w-80 rounded-3xl border bg-white p-4 text-left shadow-xl group-hover:block">
         <div className={`h-16 rounded-2xl bg-gradient-to-r ${profile.bannerGradient}`} />
+
         <div className="-mt-7 flex items-end gap-3 px-2">
           <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border-4 border-white bg-blue-800 text-xl font-black text-white">
             {profile.avatar}
@@ -32,6 +38,7 @@ export function UserHoverCard({ name }: { name: string }) {
               <PresenceDot status={presence?.status ?? "offline"} />
             </span>
           </div>
+
           <div className="min-w-0 pb-1">
             <p className="truncate text-base font-black text-slate-950">{profile.name}</p>
             <p className="truncate text-xs text-blue-700">{profile.handle}</p>
@@ -92,10 +99,12 @@ export function UserHoverCard({ name }: { name: string }) {
 
 export function MentionText({ text }: { text: string }) {
   const parts = text.split(/(@[a-zA-Z0-9_-]+)/g);
+
   return (
     <>
       {parts.map((part, index) => {
         if (!part.startsWith("@")) return <span key={`${part}-${index}`}>{part}</span>;
+
         const username = part.slice(1);
         return (
           <Link key={`${part}-${index}`} href={`/u/${slugifyUser(username)}`} className="font-black text-blue-700 hover:underline">
