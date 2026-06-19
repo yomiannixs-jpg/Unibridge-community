@@ -6,7 +6,6 @@ import { getDemoPostBySlug, type DemoComment } from "@/lib/demo-posts-store";
 import { getUserKarma, MentionText, UserHoverCard } from "@/components/user-hover-card";
 import { UserActionMenu } from "@/components/user-action-menu";
 import { KarmaBadge } from "@/components/karma-badge";
-import { IdentityBadges, ContributorRibbon } from "@/components/user-identity";s
 
 type ThreadedComment = DemoComment & {
   parentId?: string;
@@ -104,8 +103,6 @@ function CommentTree({
               </button>
               <Badge badge={comment.badge} />
               <KarmaBadge karma={karma} />
-              <ContributorRibbon name={comment.author} />
-              <IdentityBadges name={comment.author} />
               <span className="rounded-full bg-slate-100 px-2 py-1">{comment.role}</span>
               <span className="rounded-full bg-emerald-50 px-2 py-1 font-black text-emerald-800">{karma} karma</span>
               <span>{comment.createdAt}</span>
