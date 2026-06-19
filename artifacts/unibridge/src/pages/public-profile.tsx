@@ -1,14 +1,25 @@
 import { Link, useRoute } from "wouter";
-import { Activity, MessageCircle, Star, UserPlus, Users } from "lucide-react";
-import { getPublicProfile, getPublicProfilePresence } from "@/lib/user-profiles-store";
-import { isFollowing, toggleFollowPerson } from "@/lib/social-store";
+import { Activity, MessageCircle, Star, UserPlus } from "lucide-react";
+import {
+  getPublicProfile,
+  getPublicProfilePresence,
+  loadProfilePosts,
+  loadProfileReplies,
+  loadProfileReputation,
+  profileTimeAgo,
+} from "@/lib/user-profiles-store";
+import { isFollowing, loadSocialStore, toggleFollowPerson } from "@/lib/social-store";
 import { PresenceBadge, PresenceDot } from "@/components/presence-badge";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+
+const tabs = ["Posts", "Replies", "Rooms", "Reputation", "People"] as const;
 
 export default function PublicProfilePage() {
   const [, params] = useRoute("/u/:slug");
   const profile = params?.slug ? getPublicProfile(params.slug) : undefined;
+  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("Posts");
   const [, forceRender] = useState(0);
+  const social = useMemo(() => loadSocialStore(), []);
 
   if (!profile) {
     return (
@@ -24,6 +35,9 @@ export default function PublicProfilePage() {
 
   const presence = getPublicProfilePresence(profile.name);
   const followed = isFollowing(profile.id);
+  const posts = loadProfilePosts(profile);
+  const replies = loadProfileReplies(profile);
+  const reputationEvents = loadProfileReputation(profile);
 
   const handleFollow = () => {
     toggleFollowPerson(profile);
@@ -41,7 +55,6 @@ export default function PublicProfilePage() {
                 <PresenceDot status={presence?.status ?? "offline"} />
               </span>
             </div>
-
             <div className="min-w-0">
               <h1 className="text-3xl font-black">{profile.name}</h1>
               <p className="text-sm text-blue-700">{profile.handle}</p>
@@ -54,18 +67,11 @@ export default function PublicProfilePage() {
               </div>
             </div>
           </div>
-
           <div className="flex flex-wrap gap-2">
-            <button
-              onClick={handleFollow}
-              className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-bold ${
-                followed ? "bg-blue-50 text-blue-800 hover:bg-blue-100" : "bg-blue-800 text-white hover:bg-blue-900"
-              }`}
-            >
+            <button onClick={handleFollow} className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-bold ${followed ? "bg-blue-50 text-blue-800 hover:bg-blue-100" : "bg-blue-800 text-white hover:bg-blue-900"}`}>
               <UserPlus className="h-4 w-4" />
               {followed ? "✓ Following" : "Follow"}
             </button>
-
             <Link href="/messages" className="inline-flex items-center gap-2 rounded-full border px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100">
               <MessageCircle className="h-4 w-4" />
               Message
@@ -96,7 +102,6 @@ export default function PublicProfilePage() {
         <div className="rounded-3xl border bg-white p-6 shadow-sm">
           <h2 className="text-xl font-black">About</h2>
           <p className="mt-4 text-sm leading-7 text-slate-600">{profile.bio}</p>
-
           <div className="mt-5 grid gap-3 text-sm text-slate-600 md:grid-cols-2">
             <div><b className="text-slate-900">Country</b><p>{profile.country}</p></div>
             <div><b className="text-slate-900">Institution</b><p>{profile.institution}</p></div>
@@ -104,39 +109,107 @@ export default function PublicProfilePage() {
             <div><b className="text-slate-900">Role</b><p>{profile.role}</p></div>
           </div>
         </div>
-
         <div className="space-y-4">
           <div className="rounded-3xl border bg-white p-6 shadow-sm">
             <h2 className="text-xl font-black">Interests</h2>
             <div className="mt-4 flex flex-wrap gap-2">
-              {profile.interests.map((item) => (
-                <span key={item} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800">{item}</span>
-              ))}
+              {profile.interests.map((item) => <span key={item} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800">{item}</span>)}
             </div>
           </div>
-
           <div className="rounded-3xl border bg-white p-6 shadow-sm">
             <h2 className="text-xl font-black">Skills</h2>
             <div className="mt-4 flex flex-wrap gap-2">
-              {profile.skills.map((item) => (
-                <span key={item} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">{item}</span>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-3xl border bg-white p-6 shadow-sm">
-            <h2 className="flex items-center gap-2 text-xl font-black">
-              <Users className="h-5 w-5 text-blue-700" />
-              Rooms
-            </h2>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {profile.joinedRooms.map((room) => (
-                <span key={room} className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">{room}</span>
-              ))}
+              {profile.skills.map((item) => <span key={item} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">{item}</span>)}
             </div>
           </div>
         </div>
       </section>
+
+      <section className="rounded-3xl border bg-white p-4 shadow-sm">
+        <div className="flex gap-2 overflow-x-auto">
+          {tabs.map((tab) => (
+            <button key={tab} onClick={() => setActiveTab(tab)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold ${activeTab === tab ? "bg-blue-800 text-white" : "border bg-white text-slate-700 hover:bg-slate-50"}`}>
+              {tab}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {activeTab === "Posts" && (
+        <section className="grid gap-4">
+          {posts.map((post) => (
+            <article key={post.id} className="rounded-3xl border bg-white p-5 shadow-sm">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-500">
+                <span className="rounded-full bg-blue-50 px-2 py-1 text-blue-800">{post.room}</span>
+                <span>{profileTimeAgo(post.createdAt)}</span>
+              </div>
+              <h2 className="mt-3 text-xl font-black">{post.title}</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{post.excerpt}</p>
+              <div className="mt-4 flex gap-4 text-sm font-bold text-slate-500">
+                <span>{post.replies} replies</span>
+                <span>{post.upvotes} upvotes</span>
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
+
+      {activeTab === "Replies" && (
+        <section className="grid gap-4">
+          {replies.map((reply) => (
+            <article key={reply.id} className="rounded-3xl border bg-white p-5 shadow-sm">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-500">
+                <span className="rounded-full bg-blue-50 px-2 py-1 text-blue-800">{reply.room}</span>
+                <span>{profileTimeAgo(reply.createdAt)}</span>
+              </div>
+              <h2 className="mt-3 text-lg font-black">{reply.threadTitle}</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{reply.body}</p>
+            </article>
+          ))}
+        </section>
+      )}
+
+      {activeTab === "Rooms" && (
+        <section className="rounded-3xl border bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-black">Joined Rooms</h2>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {profile.joinedRooms.map((room) => <span key={room} className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">{room}</span>)}
+          </div>
+        </section>
+      )}
+
+      {activeTab === "Reputation" && (
+        <section className="grid gap-4">
+          {reputationEvents.map((event) => (
+            <article key={event.id} className="rounded-3xl border bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="font-black">{event.label}</h2>
+                  <p className="text-sm text-slate-500">{profileTimeAgo(event.createdAt)}</p>
+                </div>
+                <span className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-800">+{event.points}</span>
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
+
+      {activeTab === "People" && (
+        <section className="grid gap-4 md:grid-cols-2">
+          {[...social.followers, ...social.following].slice(0, 6).map((person) => (
+            <Link key={person.id} href={`/u/${person.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`} className="rounded-3xl border bg-white p-5 shadow-sm hover:border-blue-300">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-800 font-black text-white">{person.avatar}</div>
+                <div>
+                  <h2 className="font-black">{person.name}</h2>
+                  <p className="text-sm text-blue-700">{person.handle}</p>
+                  <p className="text-sm text-slate-500">{person.role}</p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </section>
+      )}
     </div>
   );
 }
