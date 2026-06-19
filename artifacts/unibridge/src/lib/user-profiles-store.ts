@@ -1,4 +1,4 @@
-import { loadSocialStore, type SocialPerson } from "@/lib/social-store";
+﻿import { loadSocialStore, type SocialPerson } from "@/lib/social-store";
 import { loadPresenceUsers } from "@/lib/presence-store";
 
 export type PublicUserProfile = SocialPerson & {
@@ -61,7 +61,7 @@ const profileExtras: Record<string, Omit<PublicUserProfile, keyof SocialPerson |
     joinedDate: "2025-09-12T10:00:00.000Z",
     followersCount: 842,
     followingCount: 91,
-    awards: ["🏆", "⭐", "🎓"],
+    awards: ["ðŸ†", "â­", "ðŸŽ“"],
     achievements: ["Top Contributor", "Helpful Researcher", "Mentor"],
     bannerGradient: "from-blue-700 via-indigo-700 to-slate-900",
   },
@@ -78,7 +78,7 @@ const profileExtras: Record<string, Omit<PublicUserProfile, keyof SocialPerson |
     joinedDate: "2025-10-02T10:00:00.000Z",
     followersCount: 690,
     followingCount: 74,
-    awards: ["🎓", "🏅", "⭐"],
+    awards: ["ðŸŽ“", "ðŸ…", "â­"],
     achievements: ["Admissions Mentor", "Verified Advisor", "Essay Helper"],
     bannerGradient: "from-purple-700 via-blue-700 to-slate-900",
   },
@@ -95,7 +95,7 @@ const profileExtras: Record<string, Omit<PublicUserProfile, keyof SocialPerson |
     joinedDate: "2025-08-19T10:00:00.000Z",
     followersCount: 934,
     followingCount: 116,
-    awards: ["📊", "🏆", "⭐"],
+    awards: ["ðŸ“Š", "ðŸ†", "â­"],
     achievements: ["Methods Expert", "Top Answerer", "Data Mentor"],
     bannerGradient: "from-emerald-700 via-blue-700 to-slate-900",
   },
@@ -119,15 +119,42 @@ function fallbackExtra(person: SocialPerson): Omit<PublicUserProfile, keyof Soci
     joinedDate: "2026-01-01T10:00:00.000Z",
     followersCount: 34 + person.reputation % 100,
     followingCount: 19,
-    awards: ["✨"],
+    awards: ["âœ¨"],
     achievements: ["Community Member"],
     bannerGradient: "from-blue-700 via-indigo-700 to-slate-900",
   };
 }
 
+
+const demoStudentProfile: PublicUserProfile = {
+  id: "demo-student",
+  name: "Demo Student",
+  handle: "@demostudent",
+  avatar: "DS",
+  role: "Graduate Applicant",
+  reputation: 240,
+  following: false,
+  slug: "demostudent",
+  country: "Nigeria",
+  institution: "CollegeDiscourse Community",
+  field: "Education and Research",
+  bio: "Exploring scholarships, research support, and study-abroad opportunities on CollegeDiscourse.",
+  interests: ["Scholarships", "Research Help", "Study Abroad"],
+  skills: ["Writing", "Research", "Applications"],
+  joinedRooms: ["Research Help", "Scholarships", "Study Abroad"],
+  posts: 18,
+  comments: 92,
+  joinedDate: "2026-01-01T10:00:00.000Z",
+  followersCount: 24,
+  followingCount: 13,
+  awards: ["âœ¨", "ðŸŽ“"],
+  achievements: ["Verified User", "Rising Member"],
+  bannerGradient: "from-blue-700 via-indigo-700 to-slate-900",
+};
+
 export function loadPublicProfiles(): PublicUserProfile[] {
   const social = loadSocialStore();
-  const people = [...social.followers, ...social.following].filter(
+  const people = [demoStudentProfile, ...social.followers, ...social.following].filter(
     (person, index, self) => index === self.findIndex((p) => p.id === person.id),
   );
 
@@ -139,7 +166,18 @@ export function loadPublicProfiles(): PublicUserProfile[] {
 }
 
 export function getPublicProfile(slug: string) {
-  return loadPublicProfiles().find((profile) => profile.slug === slug);
+  const normalized = slugifyUser(slug);
+
+  if (["you", "demo-student", "demostudent", "ds"].includes(normalized)) {
+    return demoStudentProfile;
+  }
+
+  return loadPublicProfiles().find(
+    (profile) =>
+      profile.slug === normalized ||
+      slugifyUser(profile.name) === normalized ||
+      slugifyUser(profile.handle.replace("@", "")) === normalized,
+  );
 }
 
 export function getPublicProfilePresence(name: string) {
@@ -211,3 +249,4 @@ export function joinedLabel(input: string) {
   if (Number.isNaN(date.getTime())) return "Joined recently";
   return `Joined ${date.toLocaleDateString(undefined, { month: "short", year: "numeric" })}`;
 }
+
