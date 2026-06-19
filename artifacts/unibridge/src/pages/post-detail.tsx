@@ -1,20 +1,63 @@
 import { Link, useLocation, useRoute } from "wouter";
-import { MessageCircle, Send } from "lucide-react";
+import { ChevronDown, ChevronRight, MessageCircle, Pin, Send } from "lucide-react";
 import { useMemo, useState } from "react";
 import { VoteButtons } from "@/components/vote-buttons";
 import { getDemoPostBySlug, type DemoComment } from "@/lib/demo-posts-store";
 
 type ThreadedComment = DemoComment & {
   parentId?: string;
+  badge?: "OP" | "MOD" | "EXPERT";
+  awards?: string[];
+  pinned?: boolean;
 };
+
+type SortMode = "Top" | "New" | "Old";
 
 function userSlug(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
-function CommentCard({
+function parseAge(value: string) {
+  if (value === "just now") return 0;
+  const number = Number.parseInt(value, 10);
+  if (Number.isNaN(number)) return 999999;
+  if (value.includes("m")) return number;
+  if (value.includes("h")) return number * 60;
+  if (value.includes("d")) return number * 60 * 24;
+  return 999999;
+}
+
+function Badge({ badge }: { badge?: ThreadedComment["badge"] }) {
+  if (!badge) return null;
+
+  const style =
+    badge === "OP"
+      ? "bg-blue-50 text-blue-800"
+      : badge === "MOD"
+        ? "bg-emerald-50 text-emerald-800"
+        : "bg-yellow-50 text-yellow-800";
+
+  return <span className={`rounded-full px-2 py-1 text-[10px] font-black ${style}`}>{badge}</span>;
+}
+
+function Awards({ awards }: { awards?: string[] }) {
+  if (!awards?.length) return null;
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-1">
+      {awards.map((award, index) => (
+        <span key={`${award}-${index}`} className="rounded-full bg-yellow-50 px-2 py-1 text-xs font-black text-yellow-800">
+          {award}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function CommentTree({
   comment,
-  children,
+  childrenComments,
+  renderChildren,
   onReply,
   onSave,
   onReport,
@@ -23,7 +66,8 @@ function CommentCard({
   depth = 0,
 }: {
   comment: ThreadedComment;
-  children?: React.ReactNode;
+  childrenComments: ThreadedComment[];
+  renderChildren: (parentId: string, depth: number) => React.ReactNode;
   onReply: (comment: ThreadedComment) => void;
   onSave: (commentId: string) => void;
   onReport: (commentId: string) => void;
@@ -31,9 +75,19 @@ function CommentCard({
   reported: boolean;
   depth?: number;
 }) {
+  const [expanded, setExpanded] = useState(true);
+  const childCount = childrenComments.length;
+
   return (
     <article className={`${depth > 0 ? "border-l-2 border-blue-100 pl-4" : ""}`}>
-      <div className="rounded-3xl border bg-white p-4 shadow-sm">
+      <div className={`rounded-3xl border bg-white p-4 shadow-sm ${comment.pinned ? "border-blue-300 bg-blue-50/40" : ""}`}>
+        {comment.pinned ? (
+          <div className="mb-3 flex items-center gap-2 text-xs font-black text-blue-800">
+            <Pin className="h-4 w-4" />
+            Pinned moderator comment
+          </div>
+        ) : null}
+
         <div className="flex items-start gap-3">
           <div className="pt-1">
             <VoteButtons itemId={comment.id} baseScore={comment.score} compact />
@@ -48,13 +102,16 @@ function CommentCard({
                   {comment.author}
                 </Link>
               )}
+              <Badge badge={comment.badge} />
               <span className="rounded-full bg-slate-100 px-2 py-1">{comment.role}</span>
               <span>{comment.createdAt}</span>
             </div>
 
+            <Awards awards={comment.awards} />
+
             <p className="mt-2 text-sm leading-6 text-slate-700">{comment.body}</p>
 
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => onReply(comment)}
@@ -82,12 +139,23 @@ function CommentCard({
               >
                 {reported ? "Reported" : "Report"}
               </button>
+
+              {childCount ? (
+                <button
+                  type="button"
+                  onClick={() => setExpanded((value) => !value)}
+                  className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black text-blue-800 hover:bg-blue-50"
+                >
+                  {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                  {expanded ? "Hide" : "Show"} {childCount} {childCount === 1 ? "reply" : "replies"}
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
       </div>
 
-      {children ? <div className="mt-3 space-y-3">{children}</div> : null}
+      {expanded && childCount ? <div className="mt-3 space-y-3">{renderChildren(comment.id, depth + 1)}</div> : null}
     </article>
   );
 }
@@ -95,7 +163,7 @@ function CommentCard({
 export default function PostDetail() {
   const [, params] = useRoute("/posts/:id");
   const [location] = useLocation();
-  const fallbackSlug = location.split("/posts/")[1]?.split("?")[0]?.replace(/^\//, "");
+  const fallbackSlug = location.split("/posts/")[1]?.split("?")[0]?.replace(/^\\//, "");
   const slug = params?.id ?? fallbackSlug;
   const post = getDemoPostBySlug(slug);
 
@@ -104,6 +172,7 @@ export default function PostDetail() {
   const [savedComments, setSavedComments] = useState<string[]>([]);
   const [reportedComments, setReportedComments] = useState<string[]>([]);
   const [extraComments, setExtraComments] = useState<ThreadedComment[]>([]);
+  const [sortMode, setSortMode] = useState<SortMode>("Top");
 
   const baseReplies: ThreadedComment[] = useMemo(() => {
     if (!post) return [];
@@ -111,6 +180,17 @@ export default function PostDetail() {
     const second = post.comments[1];
 
     return [
+      {
+        id: `${post.id}-pinned`,
+        author: "MethodMentor",
+        role: "Methods Mentor",
+        badge: "MOD",
+        pinned: true,
+        awards: ["🏆 x4", "🎓 x2"],
+        body: "Before replying, try to state the outcome variable, the treatment or exposure, the sample, and the period. This makes the discussion much easier to help with.",
+        createdAt: "1h ago",
+        score: 76,
+      },
       ...(first
         ? [
             {
@@ -118,6 +198,8 @@ export default function PostDetail() {
               parentId: first.id,
               author: "ResearchNerd",
               role: "Research Mentor",
+              badge: "EXPERT",
+              awards: ["⭐ x2"],
               body: "This is useful. I would also add that the context should be narrow enough to find data.",
               createdAt: "35m ago",
               score: 18,
@@ -127,9 +209,20 @@ export default function PostDetail() {
               parentId: first.id,
               author: "You",
               role: "Member",
+              badge: "OP",
               body: "So I should start from the data and not only the idea?",
               createdAt: "20m ago",
               score: 6,
+            },
+            {
+              id: `${first.id}-reply-2-child`,
+              parentId: `${first.id}-reply-2`,
+              author: "MethodMentor",
+              role: "Methods Mentor",
+              badge: "MOD",
+              body: "Yes. Start from a research idea, but quickly check whether the data can actually measure it.",
+              createdAt: "15m ago",
+              score: 11,
             },
           ]
         : []),
@@ -140,6 +233,7 @@ export default function PostDetail() {
               parentId: second.id,
               author: "MethodMentor",
               role: "Methods Mentor",
+              badge: "MOD",
               body: "Exactly. If the question cannot become a comparison, it is probably still too broad.",
               createdAt: "18m ago",
               score: 14,
@@ -151,13 +245,31 @@ export default function PostDetail() {
 
   const allComments = useMemo(() => {
     if (!post) return [];
-    return [...post.comments, ...baseReplies, ...extraComments] as ThreadedComment[];
+    const originalComments = post.comments.map((comment, index) => ({
+      ...comment,
+      badge: comment.author === post.author ? "OP" as const : index === 0 ? "EXPERT" as const : undefined,
+      awards: index === 0 ? ["🏆 x1"] : undefined,
+    }));
+
+    return [...originalComments, ...baseReplies, ...extraComments] as ThreadedComment[];
   }, [post, baseReplies, extraComments]);
 
-  const topLevelComments = allComments.filter((comment) => !comment.parentId);
+  const sortedTopLevelComments = useMemo(() => {
+    const top = allComments.filter((comment) => !comment.parentId);
+    const pinned = top.filter((comment) => comment.pinned);
+    const normal = top.filter((comment) => !comment.pinned);
+
+    const sorted = [...normal].sort((a, b) => {
+      if (sortMode === "Top") return b.score - a.score;
+      if (sortMode === "New") return parseAge(a.createdAt) - parseAge(b.createdAt);
+      return parseAge(b.createdAt) - parseAge(a.createdAt);
+    });
+
+    return [...pinned, ...sorted];
+  }, [allComments, sortMode]);
 
   const childComments = (parentId: string) =>
-    allComments.filter((comment) => comment.parentId === parentId);
+    allComments.filter((comment) => comment.parentId === parentId).sort((a, b) => b.score - a.score);
 
   if (!post) {
     return (
@@ -183,6 +295,7 @@ export default function PostDetail() {
         parentId: replyingTo?.id,
         author: "You",
         role: "Member",
+        badge: "OP",
         body,
         createdAt: "just now",
         score: 1,
@@ -204,6 +317,25 @@ export default function PostDetail() {
       items.includes(commentId) ? items.filter((id) => id !== commentId) : [...items, commentId],
     );
   };
+
+  const renderChildren = (parentId: string, depth: number): React.ReactNode =>
+    childComments(parentId).map((child) => (
+      <CommentTree
+        key={child.id}
+        comment={child}
+        childrenComments={childComments(child.id)}
+        renderChildren={renderChildren}
+        depth={depth}
+        onReply={(item) => {
+          setReplyingTo(item);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+        onSave={toggleSaved}
+        onReport={toggleReported}
+        saved={savedComments.includes(child.id)}
+        reported={reportedComments.includes(child.id)}
+      />
+    ));
 
   return (
     <div className="space-y-6">
@@ -235,15 +367,11 @@ export default function PostDetail() {
       </article>
 
       <form onSubmit={submit} className="rounded-3xl border bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-black">
-          {replyingTo ? `Replying to ${replyingTo.author}` : "Add a comment"}
-        </h2>
+        <h2 className="text-lg font-black">{replyingTo ? `Replying to ${replyingTo.author}` : "Add a comment"}</h2>
 
         {replyingTo ? (
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800">
-              Threaded reply
-            </span>
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800">Threaded reply</span>
             <button
               type="button"
               onClick={() => setReplyingTo(null)}
@@ -269,12 +397,29 @@ export default function PostDetail() {
       </form>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-black">Comments</h2>
+        <div className="flex flex-col gap-3 rounded-3xl border bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-xl font-black">Comments</h2>
+          <div className="flex flex-wrap gap-2">
+            {(["Top", "New", "Old"] as SortMode[]).map((item) => (
+              <button
+                key={item}
+                onClick={() => setSortMode(item)}
+                className={`rounded-full px-4 py-2 text-xs font-black ${
+                  sortMode === item ? "bg-blue-800 text-white" : "border bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
 
-        {topLevelComments.map((comment) => (
-          <CommentCard
+        {sortedTopLevelComments.map((comment) => (
+          <CommentTree
             key={comment.id}
             comment={comment}
+            childrenComments={childComments(comment.id)}
+            renderChildren={renderChildren}
             onReply={(item) => {
               setReplyingTo(item);
               window.scrollTo({ top: 0, behavior: "smooth" });
@@ -283,23 +428,7 @@ export default function PostDetail() {
             onReport={toggleReported}
             saved={savedComments.includes(comment.id)}
             reported={reportedComments.includes(comment.id)}
-          >
-            {childComments(comment.id).map((child) => (
-              <CommentCard
-                key={child.id}
-                comment={child}
-                depth={1}
-                onReply={(item) => {
-                  setReplyingTo(item);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-                onSave={toggleSaved}
-                onReport={toggleReported}
-                saved={savedComments.includes(child.id)}
-                reported={reportedComments.includes(child.id)}
-              />
-            ))}
-          </CommentCard>
+          />
         ))}
       </section>
     </div>
