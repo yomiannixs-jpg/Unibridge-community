@@ -12,6 +12,12 @@ export type PublicUserProfile = SocialPerson & {
   joinedRooms: string[];
   posts: number;
   comments: number;
+  joinedDate: string;
+  followersCount: number;
+  followingCount: number;
+  awards: string[];
+  achievements: string[];
+  bannerGradient: string;
 };
 
 export type ProfilePost = {
@@ -52,6 +58,12 @@ const profileExtras: Record<string, Omit<PublicUserProfile, keyof SocialPerson |
     joinedRooms: ["Research Help", "Programming and AI"],
     posts: 24,
     comments: 168,
+    joinedDate: "2025-09-12T10:00:00.000Z",
+    followersCount: 842,
+    followingCount: 91,
+    awards: ["🏆", "⭐", "🎓"],
+    achievements: ["Top Contributor", "Helpful Researcher", "Mentor"],
+    bannerGradient: "from-blue-700 via-indigo-700 to-slate-900",
   },
   GradCoach: {
     country: "United Kingdom",
@@ -63,6 +75,12 @@ const profileExtras: Record<string, Omit<PublicUserProfile, keyof SocialPerson |
     joinedRooms: ["PhD Admissions", "Scholarships"],
     posts: 19,
     comments: 142,
+    joinedDate: "2025-10-02T10:00:00.000Z",
+    followersCount: 690,
+    followingCount: 74,
+    awards: ["🎓", "🏅", "⭐"],
+    achievements: ["Admissions Mentor", "Verified Advisor", "Essay Helper"],
+    bannerGradient: "from-purple-700 via-blue-700 to-slate-900",
   },
   MethodMentor: {
     country: "Ghana",
@@ -74,66 +92,37 @@ const profileExtras: Record<string, Omit<PublicUserProfile, keyof SocialPerson |
     joinedRooms: ["Research Help", "Programming and AI"],
     posts: 31,
     comments: 211,
-  },
-  LinaStudy: {
-    country: "Kenya",
-    institution: "Student Applicant Community",
-    field: "Study Abroad",
-    bio: "Exploring study-abroad routes, scholarships, and application timelines.",
-    interests: ["Study Abroad", "Scholarships", "Visa Planning"],
-    skills: ["Applications", "Budgeting", "Country Comparison"],
-    joinedRooms: ["Study Abroad", "Scholarships"],
-    posts: 7,
-    comments: 34,
-  },
-  FinanceGuru: {
-    country: "United States",
-    institution: "Finance Research Circle",
-    field: "Finance",
-    bio: "Mentors students interested in finance research, markets, and graduate study.",
-    interests: ["Finance", "Markets", "Graduate Study"],
-    skills: ["Asset Pricing", "Research Feedback", "Career Advice"],
-    joinedRooms: ["Research Help", "Career Launch"],
-    posts: 27,
-    comments: 190,
-  },
-  CareerBridge: {
-    country: "Canada",
-    institution: "Career Launch Network",
-    field: "Careers",
-    bio: "Reviews CVs, internship strategies, interview preparation, and early-career planning.",
-    interests: ["CVs", "Internships", "Career Strategy"],
-    skills: ["CV Review", "Interview Prep", "Networking"],
-    joinedRooms: ["Career Launch"],
-    posts: 22,
-    comments: 133,
-  },
-  AminaStudy: {
-    country: "Nigeria",
-    institution: "Graduate Applicant",
-    field: "International Education",
-    bio: "Graduate applicant sharing scholarship and country-comparison notes.",
-    interests: ["Scholarships", "Study Abroad", "Admissions"],
-    skills: ["Essays", "Applications", "Planning"],
-    joinedRooms: ["Study Abroad", "Scholarships"],
-    posts: 11,
-    comments: 59,
-  },
-  VisaGuide: {
-    country: "Germany",
-    institution: "International Student Support",
-    field: "Study Abroad",
-    bio: "Explains visa timelines, post-study work options, budgeting, and country selection.",
-    interests: ["Visas", "Country Choice", "Post-study Work"],
-    skills: ["Visa Planning", "Budgeting", "International Education"],
-    joinedRooms: ["Study Abroad"],
-    posts: 28,
-    comments: 176,
+    joinedDate: "2025-08-19T10:00:00.000Z",
+    followersCount: 934,
+    followingCount: 116,
+    awards: ["📊", "🏆", "⭐"],
+    achievements: ["Methods Expert", "Top Answerer", "Data Mentor"],
+    bannerGradient: "from-emerald-700 via-blue-700 to-slate-900",
   },
 };
 
 export function slugifyUser(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+function fallbackExtra(person: SocialPerson): Omit<PublicUserProfile, keyof SocialPerson | "slug"> {
+  return {
+    country: "Global",
+    institution: "CollegeDiscourse",
+    field: "Student Community",
+    bio: "A CollegeDiscourse member participating in academic and career discussions.",
+    interests: ["Education", "Community", "Mentorship"],
+    skills: ["Discussion", "Peer Support"],
+    joinedRooms: ["Research Help"],
+    posts: 3,
+    comments: 12,
+    joinedDate: "2026-01-01T10:00:00.000Z",
+    followersCount: 34 + person.reputation % 100,
+    followingCount: 19,
+    awards: ["✨"],
+    achievements: ["Community Member"],
+    bannerGradient: "from-blue-700 via-indigo-700 to-slate-900",
+  };
 }
 
 export function loadPublicProfiles(): PublicUserProfile[] {
@@ -142,25 +131,11 @@ export function loadPublicProfiles(): PublicUserProfile[] {
     (person, index, self) => index === self.findIndex((p) => p.id === person.id),
   );
 
-  return people.map((person) => {
-    const extra = profileExtras[person.name] ?? {
-      country: "Global",
-      institution: "CollegeDiscourse",
-      field: "Student Community",
-      bio: "A CollegeDiscourse member participating in academic and career discussions.",
-      interests: ["Education", "Community", "Mentorship"],
-      skills: ["Discussion", "Peer Support"],
-      joinedRooms: ["Research Help"],
-      posts: 3,
-      comments: 12,
-    };
-
-    return {
-      ...person,
-      slug: slugifyUser(person.name),
-      ...extra,
-    };
-  });
+  return people.map((person) => ({
+    ...person,
+    slug: slugifyUser(person.name),
+    ...(profileExtras[person.name] ?? fallbackExtra(person)),
+  }));
 }
 
 export function getPublicProfile(slug: string) {
@@ -191,15 +166,6 @@ export function loadProfilePosts(profile: PublicUserProfile): ProfilePost[] {
       replies: 11,
       upvotes: 29,
     },
-    {
-      id: `${profile.slug}-post-3`,
-      title: `Useful resources for ${profile.skills[0] ?? "student success"}`,
-      room: "Resources",
-      excerpt: "A curated list of templates, examples, and practical tools for students.",
-      createdAt: new Date(now - 1000 * 60 * 60 * 72).toISOString(),
-      replies: 7,
-      upvotes: 21,
-    },
   ];
 }
 
@@ -214,13 +180,6 @@ export function loadProfileReplies(profile: PublicUserProfile): ProfileReply[] {
     },
     {
       id: `${profile.slug}-reply-2`,
-      threadTitle: "Which country is better for funded graduate study?",
-      room: "Study Abroad",
-      body: `${profile.name} recommended comparing funding, work rights, visa timelines, and post-study options together.`,
-      createdAt: new Date(now - 1000 * 60 * 60 * 6).toISOString(),
-    },
-    {
-      id: `${profile.slug}-reply-3`,
       threadTitle: "Should I email a professor before applying?",
       room: "PhD Admissions",
       body: `${profile.name} advised sending a short, specific email tied to the professor's recent research.`,
@@ -245,4 +204,10 @@ export function profileTimeAgo(input: string) {
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
   return `${Math.floor(seconds / 86400)}d ago`;
+}
+
+export function joinedLabel(input: string) {
+  const date = new Date(input);
+  if (Number.isNaN(date.getTime())) return "Joined recently";
+  return `Joined ${date.toLocaleDateString(undefined, { month: "short", year: "numeric" })}`;
 }
